@@ -34,6 +34,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { id: "dashboard", label: "Vue d'ensemble", icon: LayoutDashboard, href: "/" },
+    { id: "database", label: "Base de Données", icon: Database, href: "/database" },
     { id: "monitoring", label: "État du Serveur", icon: ShieldCheck, href: "/monitoring" },
     { id: "users", label: "Tous les Utilisateurs", icon: Users, href: "/users" },
     { id: "agents", label: "Gestion des Agents", icon: UserPlus, href: "/agents" },

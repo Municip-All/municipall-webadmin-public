@@ -106,5 +106,49 @@ export const api = {
       console.error('[API DEBUG] Error fetching docker stats:', error);
       return null;
     }
+  },
+
+  async getTables(): Promise<string[] | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/database/tables`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error fetching tables:', error);
+      return null;
+    }
+  },
+
+  async getTableData(tableName: string, limit = 50, offset = 0) {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error(`[API DEBUG] Error fetching table data for ${tableName}:`, error);
+      return null;
+    }
+  },
+
+  async executeQuery(query: string) {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/database/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+        cache: 'no-store'
+      });
+      const json = await response.json();
+      if (!json.success) throw new Error(json.error || 'Failed to execute query');
+      return json.data;
+    } catch (error: any) {
+      console.error('[API DEBUG] Error executing query:', error);
+      return { error: error.message };
+    }
   }
 };
