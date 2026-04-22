@@ -1,0 +1,14 @@
+services:
+  webadmin:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/municipall-webadmin:latest
+    container_name: municipall-webadmin
+    restart: always
+    ports:
+      - "5000:3000"
+    networks:
+      - proxy-bridge
+
+networks:
+  proxy-bridge:
+    external: true
+    name: municipall_default
