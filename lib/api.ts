@@ -43,11 +43,20 @@ export interface MonitoringStats {
   };
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.municipall.dev';
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const env = localStorage.getItem('municipall_env') || 'PROD';
+    if (env === 'DEV') {
+      return process.env.NEXT_PUBLIC_API_URL_DEV || 'http://localhost:3001';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'https://api.municipall.dev';
+};
 
 export const api = {
   async getStats(): Promise<MonitoringStats | null> {
     try {
+      const API_BASE_URL = getBaseUrl();
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
         cache: 'no-store'
       });
@@ -62,6 +71,7 @@ export const api = {
 
   async getUsers(): Promise<User[] | null> {
     try {
+      const API_BASE_URL = getBaseUrl();
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
         cache: 'no-store'
       });
@@ -76,6 +86,7 @@ export const api = {
 
   async getDockerContainers(): Promise<DockerContainer[] | null> {
     try {
+      const API_BASE_URL = getBaseUrl();
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/docker`, {
         cache: 'no-store'
       });

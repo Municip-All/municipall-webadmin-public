@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -10,12 +10,27 @@ import {
   Settings, 
   LogOut,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  Database,
+  RefreshCcw
 } from "lucide-react";
 import clsx from "clsx";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [env, setEnv] = useState("PROD");
+
+  useEffect(() => {
+    const savedEnv = localStorage.getItem("municipall_env") || "PROD";
+    setEnv(savedEnv);
+  }, []);
+
+  const toggleEnv = () => {
+    const newEnv = env === "PROD" ? "DEV" : "PROD";
+    setEnv(newEnv);
+    localStorage.setItem("municipall_env", newEnv);
+    window.location.reload();
+  };
 
   const menuItems = [
     { id: "dashboard", label: "Vue d'ensemble", icon: LayoutDashboard, href: "/" },
@@ -70,18 +85,54 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto p-6 border-t border-gray-50 space-y-2">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all outline-none">
-          <Settings className="w-5 h-5 text-gray-400" />
-          Paramètres Système
-        </button>
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all outline-none"
-        >
-          <LogOut className="w-5 h-5" />
-          Déconnexion
-        </button>
+      <div className="mt-auto p-6 border-t border-gray-50 space-y-4">
+        {/* Environment Switcher */}
+        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Database className="w-4 h-4 text-gray-400" />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Environnement</span>
+          </div>
+          <div className="flex p-1 bg-white rounded-xl border border-gray-100 relative">
+            <button 
+              onClick={toggleEnv}
+              className={clsx(
+                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all z-10",
+                env === "PROD" ? "text-white" : "text-gray-400"
+              )}
+            >
+              PROD
+            </button>
+            <button 
+              onClick={toggleEnv}
+              className={clsx(
+                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all z-10",
+                env === "DEV" ? "text-white" : "text-gray-400"
+              )}
+            >
+              DEV
+            </button>
+            <div 
+              className={clsx(
+                "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-municipall-blue rounded-lg transition-all duration-300",
+                env === "PROD" ? "left-1" : "left-[calc(50%+1px)]"
+              )}
+            ></div>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all outline-none">
+            <Settings className="w-5 h-5 text-gray-400" />
+            Paramètres Système
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all outline-none"
+          >
+            <LogOut className="w-5 h-5" />
+            Déconnexion
+          </button>
+        </div>
       </div>
     </aside>
   );
