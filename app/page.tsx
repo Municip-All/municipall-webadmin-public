@@ -9,7 +9,6 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   Search,
-  Filter,
   Cpu,
   Activity,
   HardDrive,
@@ -26,18 +25,31 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchStats = async () => {
-    const data = await api.getStats();
-    if (data) {
-      setStats(data);
-      setLastUpdated(new Date());
+    setIsLoading(true);
+    try {
+      const data = await api.getStats();
+      if (data) {
+        setStats(data);
+        setLastUpdated(new Date());
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
+    const timer = setTimeout(() => {
+      fetchStats().catch(console.error);
+    }, 0);
+
+    const interval = setInterval(() => {
+      fetchStats().catch(console.error);
+    }, 30000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -171,8 +183,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      
-      {/* ... rest of the dashboard UI ... */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Chart Area */}

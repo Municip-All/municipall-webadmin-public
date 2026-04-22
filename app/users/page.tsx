@@ -1,31 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Search, 
-  Filter, 
   MoreVertical, 
   ArrowUpDown, 
   MapPin, 
   UserCircle,
   Calendar,
-  CheckCircle2,
-  XCircle
+  CheckCircle2
 } from "lucide-react";
 import clsx from "clsx";
-
-const MOCK_USERS = [
-  { id: 1, name: "Jean Dupont", email: "jean.d@example.com", city: "Bouffémont", role: "Citoyen", status: "Actif", date: "2024-03-15" },
-  { id: 2, name: "Marie Curie", email: "m.curie@ville-domont.fr", city: "Domont", role: "Agent", status: "Actif", date: "2024-03-10" },
-  { id: 3, name: "Paul Valéry", email: "p.valery@ezanville.fr", city: "Ézanville", role: "Agent", status: "En attente", date: "2024-03-20" },
-  { id: 4, name: "Alice Martin", email: "a.martin@example.com", city: "Bouffémont", role: "Citoyen", status: "Actif", date: "2024-03-18" },
-  { id: 5, name: "Robert Fox", email: "r.fox@example.com", city: "Domont", role: "Citoyen", status: "Banni", date: "2024-02-28" },
-  { id: 6, name: "Sophie Germain", email: "s.germain@ville.fr", city: "Cergy", role: "Agent", status: "Actif", date: "2024-01-12" },
-];
+import { api, User } from "@/lib/api";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCity, setFilterCity] = useState("Toutes");
 
@@ -33,9 +22,8 @@ export default function UsersPage() {
     const fetchUsers = async () => {
       const data = await api.getUsers();
       if (data) setUsers(data);
-      setIsLoading(false);
     };
-    fetchUsers();
+    fetchUsers().catch(console.error);
   }, []);
 
   const filteredUsers = users.filter(user => {

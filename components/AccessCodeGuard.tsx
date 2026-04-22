@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Lock, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
+import { ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
 
 export default function AccessCodeGuard({ children }: { children: React.ReactNode }) {
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("admin_authorized") === "true";
+    }
+    return false;
+  });
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,11 +18,10 @@ export default function AccessCodeGuard({ children }: { children: React.ReactNod
   const VALID_CODE = "MUNICIPALL2026";
 
   useEffect(() => {
-    const storedAuth = localStorage.getItem("admin_authorized");
-    if (storedAuth === "true") {
-      setIsAuthorized(true);
-    }
-    setIsLoading(false);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -8,7 +8,6 @@ import {
   Building2, 
   Key,
   CheckCircle2,
-  AlertCircle,
   X
 } from "lucide-react";
 import clsx from "clsx";

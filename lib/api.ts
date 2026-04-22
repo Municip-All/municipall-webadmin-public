@@ -1,3 +1,25 @@
+export interface User {
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+  role: string;
+  city?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DockerContainer {
+  id: string;
+  name: string;
+  image: string;
+  state: string;
+  status: string;
+  uptime: string;
+  cpu: string;
+  memory: string;
+}
+
 export interface MonitoringStats {
   business: {
     cities: number;
@@ -38,7 +60,7 @@ export const api = {
     }
   },
 
-  async getUsers(): Promise<any[] | null> {
+  async getUsers(): Promise<User[] | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
         cache: 'no-store'
@@ -52,7 +74,7 @@ export const api = {
     }
   },
 
-  async getDockerContainers(): Promise<any[] | null> {
+  async getDockerContainers(): Promise<DockerContainer[] | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/docker`, {
         cache: 'no-store'

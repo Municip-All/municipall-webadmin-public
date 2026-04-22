@@ -6,33 +6,42 @@ import {
   Activity, 
   Cpu, 
   RefreshCcw, 
-  CheckCircle2, 
-  XCircle,
-  Clock,
-  HardDrive
+  Clock
 } from "lucide-react";
 import clsx from "clsx";
-import { api } from "@/lib/api";
+import { api, DockerContainer } from "@/lib/api";
 
 export default function MonitoringPage() {
-  const [containers, setContainers] = useState<any[]>([]);
+  const [containers, setContainers] = useState<DockerContainer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchContainers = async () => {
     setIsLoading(true);
-    const data = await api.getDockerContainers();
-    if (data) {
-      setContainers(data);
-      setLastUpdated(new Date());
+    try {
+      const data = await api.getDockerContainers();
+      if (data) {
+        setContainers(data);
+        setLastUpdated(new Date());
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchContainers();
-    const interval = setInterval(fetchContainers, 15000); // Refresh every 15s
-    return () => clearInterval(interval);
+    const timer = setTimeout(() => {
+      fetchContainers().catch(console.error);
+    }, 0);
+    
+    const interval = setInterval(() => {
+      fetchContainers().catch(console.error);
+    }, 15000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
