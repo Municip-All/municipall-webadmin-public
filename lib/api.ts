@@ -72,14 +72,22 @@ export const api = {
   async getUsers(): Promise<User[] | null> {
     try {
       const API_BASE_URL = getBaseUrl();
+      console.log(`[API DEBUG] Fetching users from: ${API_BASE_URL}`);
+      
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
         cache: 'no-store'
       });
-      if (!response.ok) throw new Error('Failed to fetch');
+      
+      if (!response.ok) {
+        console.error(`[API DEBUG] HTTP Error: ${response.status}`);
+        throw new Error('Failed to fetch');
+      }
+      
       const json = await response.json();
+      console.log(`[API DEBUG] Received ${json.data?.length || 0} users`);
       return json.data;
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('[API DEBUG] Error fetching users:', error);
       return null;
     }
   },
@@ -87,6 +95,7 @@ export const api = {
   async getDockerContainers(): Promise<DockerContainer[] | null> {
     try {
       const API_BASE_URL = getBaseUrl();
+      console.log(`[API DEBUG] Fetching docker from: ${API_BASE_URL}`);
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/docker`, {
         cache: 'no-store'
       });
@@ -94,7 +103,7 @@ export const api = {
       const json = await response.json();
       return json.data;
     } catch (error) {
-      console.error('Error fetching docker stats:', error);
+      console.error('[API DEBUG] Error fetching docker stats:', error);
       return null;
     }
   }
