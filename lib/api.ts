@@ -47,7 +47,7 @@ const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const env = localStorage.getItem('municipall_env') || 'PROD';
     if (env === 'DEV') {
-      return process.env.NEXT_PUBLIC_API_URL_DEV || 'http://localhost:3001';
+      return process.env.NEXT_PUBLIC_API_URL_DEV || 'https://dev.api.municipall.dev';
     }
   }
   return process.env.NEXT_PUBLIC_API_URL || 'https://api.municipall.dev';
