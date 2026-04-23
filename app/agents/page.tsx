@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   UserPlus, 
   ShieldCheck, 
@@ -8,25 +8,68 @@ import {
   Building2, 
   Key,
   CheckCircle2,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import clsx from "clsx";
+import { api, City, Invitation } from "@/lib/api";
 
 export default function AgentsPage() {
+  const [cities, setCities] = useState<City[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    city: "",
+    cityId: "",
     permission: "standard"
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const cityData = await api.getCities();
+      if (cityData) {
+        setCities(cityData);
+        // Fetch invitations for all cities
+        const allInvs: Invitation[] = [];
+        for (const city of cityData) {
+          const invs = await api.getCityInvitations(city.id);
+          if (invs) allInvs.push(...invs);
+        }
+        setInvitations(allInvs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      }
+      setIsLoading(false);
+    };
+    fetchData().catch(console.error);
+  }, []);
+
+  const getCityName = (cityId: string) => {
+    return cities.find(c => c.id === cityId)?.name || "N/A";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Logic to add agent would go here
-    setIsSuccess(true);
-    setTimeout(() => setIsSuccess(false), 5000);
-    setFormData({ name: "", email: "", city: "", permission: "standard" });
+    if (!formData.cityId || !formData.email) return;
+
+    const result = await api.createInvitation(formData.cityId, formData.email);
+    if (result) {
+      setIsSuccess(true);
+      setInvitations([result, ...invitations]);
+      setTimeout(() => setIsSuccess(false), 5000);
+      setFormData({ name: "", email: "", cityId: "", permission: "standard" });
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diff < 60) return "À l'instant";
+    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -83,15 +126,14 @@ export default function AgentsPage() {
                   <Building2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                   <select 
                     required
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    value={formData.cityId}
+                    onChange={(e) => setFormData({...formData, cityId: e.target.value})}
                     className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-municipall-blue/10 outline-none appearance-none transition-all"
                   >
                     <option value="">Sélectionner une ville...</option>
-                    <option>Bouffémont</option>
-                    <option>Domont</option>
-                    <option>Ézanville</option>
-                    <option>Cergy</option>
+                    {cities.map(city => (
+                      <option key={city.id} value={city.id}>{city.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -180,20 +222,25 @@ export default function AgentsPage() {
           <div className="card-panel p-6">
             <h3 className="text-base font-bold text-gray-900 mb-6">Invitations en attente</h3>
             <div className="space-y-4">
-              {[
-                { name: "Marc Lévy", city: "Cergy", time: "Hier" },
-                { name: "Julie Robert", city: "Bouffémont", time: "Il y a 2j" },
-              ].map((inv, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{inv.name}</p>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{inv.city} • {inv.time}</p>
-                  </div>
-                  <button className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
-                    <X className="w-4 h-4" />
-                  </button>
+              {isLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 text-gray-300 animate-spin" />
                 </div>
-              ))}
+              ) : invitations.length > 0 ? (
+                invitations.map((inv, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{inv.email}</p>
+                      <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{getCityName(inv.cityId)} • {formatTime(inv.createdAt)}</p>
+                    </div>
+                    <button className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-400 font-medium text-center py-4">Aucune invitation en attente.</p>
+              )}
             </div>
           </div>
         </div>

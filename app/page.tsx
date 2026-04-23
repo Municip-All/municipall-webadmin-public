@@ -6,8 +6,6 @@ import {
   Users, 
   UserCircle2, 
   Heart, 
-  ArrowUpRight, 
-  ArrowDownRight,
   Search,
   Cpu,
   Activity,
@@ -17,24 +15,43 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import StatCard from "@/components/StatCard";
-import { api, MonitoringStats } from "@/lib/api";
+import { api, MonitoringStats, Activity as ActivityLog, CityStats } from "@/lib/api";
 
 export default function Dashboard() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  const [cityStats, setCityStats] = useState<CityStats[]>([]);
 
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getStats();
-      if (data) {
-        setStats(data);
-        setLastUpdated(new Date());
-      }
+      const [statsData, activityData, cityStatsData] = await Promise.all([
+        api.getStats(),
+        api.getActivity(),
+        api.getCityStats()
+      ]);
+      
+      if (statsData) setStats(statsData);
+      if (activityData) setActivities(activityData);
+      if (cityStatsData) setCityStats(cityStatsData.sort((a, b) => b.users - a.users).slice(0, 3));
+      setLastUpdated(new Date());
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diff < 60) return "À l'instant";
+    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
+    return date.toLocaleDateString();
   };
 
   useEffect(() => {
@@ -213,25 +230,21 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="card-panel p-6">
-              <h3 className="text-base font-bold text-gray-900 mb-6">Top Villes (Satisfaction)</h3>
+              <h3 className="text-base font-bold text-gray-900 mb-6">Top Villes (Citoyens)</h3>
               <div className="space-y-4">
-                {[
-                  { name: "Bouffémont", score: "4.9", trend: "up" },
-                  { name: "Domont", score: "4.8", trend: "up" },
-                  { name: "Ézanville", score: "4.7", trend: "down" },
-                ].map((city, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100/50">
-                    <span className="text-sm font-bold text-gray-700">{city.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-extrabold text-gray-900">{city.score}</span>
-                      {city.trend === "up" ? (
-                        <ArrowUpRight className="w-3 h-3 text-green-500" />
-                      ) : (
-                        <ArrowDownRight className="w-3 h-3 text-red-500" />
-                      )}
+                {cityStats.length > 0 ? (
+                  cityStats.map((city, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100/50">
+                      <span className="text-sm font-bold text-gray-700">{city.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-extrabold text-gray-900">{city.users}</span>
+                        <Users className="w-3 h-3 text-indigo-500" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 font-medium text-center py-4">Aucune donnée disponible.</p>
+                )}
               </div>
             </div>
 
@@ -275,25 +288,24 @@ export default function Dashboard() {
           <div className="card-panel p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Activité Récente</h3>
             <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1px] before:bg-gray-100">
-              {[
-                { type: "city", text: "Nouvelle ville : Bouffémont", time: "Il y a 2h" },
-                { type: "user", text: "1,200 citoyens inscrits (Cergy)", time: "Il y a 5h" },
-                { type: "agent", text: "Agent 'Jean D.' ajouté à Domont", time: "Il y a 8h" },
-                { type: "alert", text: "Alerte système : Charge élevée", time: "Hier" },
-              ].map((activity, idx) => (
-                <div key={idx} className="flex gap-4 relative z-10">
-                  <div className={clsx(
-                    "w-[23px] h-[23px] rounded-full border-4 border-white shadow-sm flex items-center justify-center",
-                    activity.type === "city" ? "bg-blue-500" : 
-                    activity.type === "user" ? "bg-green-500" : 
-                    activity.type === "agent" ? "bg-indigo-500" : "bg-red-500"
-                  )}></div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-800 leading-snug">{activity.text}</p>
-                    <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-wide">{activity.time}</p>
+              {activities.length > 0 ? (
+                activities.map((activity, idx) => (
+                  <div key={idx} className="flex gap-4 relative z-10">
+                    <div className={clsx(
+                      "w-[23px] h-[23px] rounded-full border-4 border-white shadow-sm flex items-center justify-center",
+                      activity.type === "city" ? "bg-blue-500" : 
+                      activity.type === "user" ? "bg-green-500" : 
+                      activity.type === "agent" ? "bg-indigo-500" : "bg-red-500"
+                    )}></div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-800 leading-snug">{activity.text}</p>
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-wide">{formatTime(activity.time)}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-gray-400 font-medium text-center py-4">Aucune activité récente.</p>
+              )}
             </div>
             <button className="w-full mt-8 py-2 text-xs font-bold text-municipall-blue hover:text-municipall-indigo transition-colors border border-indigo-50 rounded-lg hover:bg-indigo-50/50">
               Voir tout l&apos;historique

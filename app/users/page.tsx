@@ -11,27 +11,38 @@ import {
   CheckCircle2
 } from "lucide-react";
 import clsx from "clsx";
-import { api, User } from "@/lib/api";
+import { api, User, City } from "@/lib/api";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCity, setFilterCity] = useState("Toutes");
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const data = await api.getUsers();
-      if (data) setUsers(data);
+    const fetchData = async () => {
+      const [userData, cityData] = await Promise.all([
+        api.getUsers(),
+        api.getCities()
+      ]);
+      if (userData) setUsers(userData);
+      if (cityData) setCities(cityData);
     };
-    fetchUsers().catch(console.error);
+    fetchData().catch(console.error);
   }, []);
+
+  const getCityName = (cityId: string | undefined) => {
+    if (!cityId) return "N/A";
+    const city = cities.find(c => c.id === cityId);
+    return city ? city.name : "N/A";
+  };
 
   const filteredUsers = users.filter(user => {
     const name = `${user.name || ""} ${user.surname || ""}`.toLowerCase();
     const email = (user.email || "").toLowerCase();
     const matchesSearch = name.includes(searchTerm.toLowerCase()) || 
                           email.includes(searchTerm.toLowerCase());
-    const matchesCity = filterCity === "Toutes" || user.city === filterCity;
+    const matchesCity = filterCity === "Toutes" || user.cityId === filterCity;
     return matchesSearch && matchesCity;
   });
 
@@ -71,11 +82,10 @@ export default function UsersPage() {
                 onChange={(e) => setFilterCity(e.target.value)}
                 className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-municipall-blue/10"
               >
-                <option>Toutes</option>
-                <option>Bouffémont</option>
-                <option>Domont</option>
-                <option>Ézanville</option>
-                <option>Cergy</option>
+                <option value="Toutes">Toutes</option>
+                {cities.map(city => (
+                  <option key={city.id} value={city.id}>{city.name}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -119,7 +129,7 @@ export default function UsersPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 text-sm text-gray-600 font-medium">
                       <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                      {user.city || "N/A"}
+                      {getCityName(user.cityId)}
                     </div>
                   </td>
                   <td className="px-6 py-4">

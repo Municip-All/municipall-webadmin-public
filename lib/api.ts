@@ -4,7 +4,7 @@ export interface User {
   surname: string;
   email: string;
   role: string;
-  city?: string;
+  cityId?: string;
   created_at: string;
   updated_at: string;
 }
@@ -80,6 +80,13 @@ export interface Invitation {
   expiresAt: string;
 }
 
+export interface Activity {
+  type: 'city' | 'user' | 'agent' | 'alert';
+  text: string;
+  time: string;
+  cityId?: string;
+}
+
 export const api = {
   async getStats(): Promise<MonitoringStats | null> {
     try {
@@ -92,6 +99,21 @@ export const api = {
       return json.data;
     } catch (error) {
       console.error('Error fetching stats:', error);
+      return null;
+    }
+  },
+
+  async getActivity(): Promise<Activity[] | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/activity`, {
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('Error fetching activity:', error);
       return null;
     }
   },
