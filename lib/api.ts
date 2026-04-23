@@ -68,6 +68,16 @@ export interface CityStats {
   name: string;
   users: number;
   agents: number;
+  pending: number;
+}
+
+export interface Invitation {
+  id: number;
+  email: string;
+  cityId: string;
+  status: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 export const api = {
@@ -89,19 +99,11 @@ export const api = {
   async getUsers(): Promise<User[] | null> {
     try {
       const API_BASE_URL = getBaseUrl();
-      console.log(`[API DEBUG] Fetching users from: ${API_BASE_URL}`);
-      
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
         cache: 'no-store'
       });
-      
-      if (!response.ok) {
-        console.error(`[API DEBUG] HTTP Error: ${response.status}`);
-        throw new Error('Failed to fetch');
-      }
-      
+      if (!response.ok) throw new Error('Failed to fetch');
       const json = await response.json();
-      console.log(`[API DEBUG] Received ${json.data?.length || 0} users`);
       return json.data;
     } catch (error) {
       console.error('[API DEBUG] Error fetching users:', error);
@@ -112,7 +114,6 @@ export const api = {
   async getDockerContainers(): Promise<DockerContainer[] | null> {
     try {
       const API_BASE_URL = getBaseUrl();
-      console.log(`[API DEBUG] Fetching docker from: ${API_BASE_URL}`);
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/docker`, {
         cache: 'no-store'
       });
@@ -201,6 +202,38 @@ export const api = {
     }
   },
 
+  async updateCity(id: string, data: Partial<City>): Promise<City | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Failed to update city');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error updating city:', error);
+      return null;
+    }
+  },
+
+  async deleteCity(id: string): Promise<boolean> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${id}`, {
+        method: 'DELETE',
+        cache: 'no-store'
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('[API DEBUG] Error deleting city:', error);
+      return false;
+    }
+  },
+
   async getCityStats(): Promise<CityStats[] | null> {
     try {
       const API_BASE_URL = getBaseUrl();
@@ -210,6 +243,50 @@ export const api = {
       return json.data;
     } catch (error) {
       console.error('[API DEBUG] Error fetching city stats:', error);
+      return null;
+    }
+  },
+
+  async getCityAgents(cityId: string): Promise<User[] | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${cityId}/agents`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch agents');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error fetching city agents:', error);
+      return null;
+    }
+  },
+
+  async getCityInvitations(cityId: string): Promise<Invitation[] | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${cityId}/invitations`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch invitations');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error fetching city invitations:', error);
+      return null;
+    }
+  },
+
+  async createInvitation(cityId: string, email: string): Promise<Invitation | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${cityId}/invitations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Failed to create invitation');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error creating invitation:', error);
       return null;
     }
   }

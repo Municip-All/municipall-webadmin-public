@@ -7,10 +7,15 @@ import {
   MapPin, 
   RefreshCcw,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Settings,
+  Trash2,
+  Users,
+  Mail,
+  UserCheck
 } from "lucide-react";
-import { api, City, CityStats } from "@/lib/api";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { api, City, CityStats, User, Invitation } from "@/lib/api";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface GouvGeoFeature {
   type: string;
@@ -27,6 +32,12 @@ export default function CitiesPage() {
   const [cities, setCities] = useState<City[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isAgentsModalOpen, setIsAgentsModalOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [cityAgents, setCityAgents] = useState<User[]>([]);
+  const [cityInvitations, setCityInvitations] = useState<Invitation[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
   
   // Stats for the chart
   const [cityStats, setCityStats] = useState<CityStats[]>([]);
@@ -44,26 +55,23 @@ export default function CitiesPage() {
     features: "flux-live,agenda,reports"
   });
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   useEffect(() => {
     let isMounted = true;
-    const fetchCities = async () => {
+    const fetchAll = async () => {
       setIsLoading(true);
       const data = await api.getCities();
-      if (isMounted && data) {
-        setCities(data);
-      }
+      if (isMounted && data) setCities(data);
       
-      // Fetch real stats
       const stats = await api.getCityStats();
-      if (isMounted && stats) {
-        setCityStats(stats);
-      }
+      if (isMounted && stats) setCityStats(stats);
       
       if (isMounted) setIsLoading(false);
     };
-    fetchCities();
+    fetchAll();
     return () => { isMounted = false; };
-  }, []);
+  }, [refreshKey]);
 
   // Search Data.gouv API
   useEffect(() => {
@@ -74,7 +82,6 @@ export default function CitiesPage() {
         try {
           const res = await fetch(`https://geo.api.gouv.fr/communes?nom=${searchQuery}&fields=nom,code,codesPostaux,contour&format=geojson&geometry=contour`);
           const data = await res.json();
-          // Data Gouv GeoJSON features
           if (isMounted && data.features) {
             setSearchResults(data.features.slice(0, 5) as GouvGeoFeature[]);
           }
@@ -120,6 +127,48 @@ export default function CitiesPage() {
       setIsAddModalOpen(false);
       setSelectedCityGeo(null);
       setFormData({ ...formData, name: "" });
+      setRefreshKey(prev => prev + 1); // Trigger refresh for stats
+    }
+  };
+
+  const handleDeleteCity = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette ville et toutes ses configurations ?")) return;
+    const success = await api.deleteCity(id);
+    if (success) {
+      setCities(cities.filter(c => c.id !== id));
+      setRefreshKey(prev => prev + 1);
+    }
+  };
+
+  const handleOpenSettings = (city: City) => {
+    setSelectedCity(city);
+    setIsSettingsModalOpen(true);
+  };
+
+  const handleUpdateFeatures = async (features: string[]) => {
+    if (!selectedCity) return;
+    const updated = await api.updateCity(selectedCity.id, { features });
+    if (updated) {
+      setCities(cities.map(c => c.id === updated.id ? updated : c));
+      setIsSettingsModalOpen(false);
+    }
+  };
+
+  const handleOpenAgents = async (city: City) => {
+    setSelectedCity(city);
+    setIsAgentsModalOpen(true);
+    const agents = await api.getCityAgents(city.id);
+    const invitations = await api.getCityInvitations(city.id);
+    setCityAgents(agents || []);
+    setCityInvitations(invitations || []);
+  };
+
+  const handleAddInvitation = async () => {
+    if (!selectedCity || !inviteEmail) return;
+    const invite = await api.createInvitation(selectedCity.id, inviteEmail);
+    if (invite) {
+      setCityInvitations([invite, ...cityInvitations]);
+      setInviteEmail("");
     }
   };
 
@@ -152,14 +201,14 @@ export default function CitiesPage() {
             </div>
           </div>
           <div className="text-xs font-medium text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-            Croissance de +15% ce mois-ci
+            Répartition en temps réel des utilisateurs
           </div>
         </div>
 
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h3 className="text-sm font-bold text-gray-900 mb-6 flex items-center gap-2">
             <UsersIcon className="w-4 h-4 text-municipall-blue" />
-            Utilisateurs par Ville Partenaire
+            Engagement par Ville
           </h3>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -171,8 +220,10 @@ export default function CitiesPage() {
                   cursor={{ fill: '#f9fafb' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar dataKey="users" name="Citoyens" fill="#244FE5" radius={[4, 4, 0, 0]} barSize={32} />
-                <Bar dataKey="agents" name="Agents" fill="#93c5fd" radius={[4, 4, 0, 0]} barSize={32} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 600, paddingTop: '10px' }} />
+                <Bar dataKey="users" name="Citoyens" fill="#244FE5" radius={[4, 4, 0, 0]} barSize={24} />
+                <Bar dataKey="agents" name="Agents Actifs" fill="#93c5fd" radius={[4, 4, 0, 0]} barSize={24} />
+                <Bar dataKey="pending" name="Invitations" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -185,24 +236,50 @@ export default function CitiesPage() {
         {isLoading ? (
           <div className="col-span-full flex justify-center py-12"><RefreshCcw className="w-8 h-8 animate-spin text-gray-300" /></div>
         ) : cities.map((city) => (
-          <div key={city.id} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between group">
-            <div className="flex items-center gap-4">
-              <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-inner"
-                style={{ backgroundColor: city.primaryColor || '#244FE5' }}
-              >
-                {city.name.charAt(0)}
+          <div key={city.id} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-inner"
+                  style={{ backgroundColor: city.primaryColor || '#244FE5' }}
+                >
+                  {city.name.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900">{city.name}</h4>
+                  <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3 h-3" /> PostGIS Boundary
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-gray-900">{city.name}</h4>
-                <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5">
-                  <MapPin className="w-3 h-3" /> PostGIS Sync
-                </p>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => handleOpenAgents(city)}
+                  className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Gérer les agents"
+                >
+                  <Users className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => handleOpenSettings(city)}
+                  className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Réglages"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => handleDeleteCity(city.id)}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <div className="flex gap-1">
-              {city.features?.slice(0, 2).map((f: string) => (
-                <span key={f} className="px-2 py-1 bg-gray-50 text-gray-500 text-[10px] font-bold uppercase rounded border border-gray-100">
+            
+            <div className="flex flex-wrap gap-1.5">
+              {city.features?.map((f: string) => (
+                <span key={f} className="px-2 py-0.5 bg-gray-50 text-gray-400 text-[10px] font-bold uppercase rounded border border-gray-100">
                   {f}
                 </span>
               ))}
@@ -222,9 +299,7 @@ export default function CitiesPage() {
               </h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600 font-bold p-2">✕</button>
             </div>
-            
             <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
-              {/* Step 1: Search API */}
               <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 relative">
                 <label className="block text-sm font-bold text-gray-900 mb-2">1. Rechercher la commune (Data.gouv.fr)</label>
                 <div className="relative">
@@ -238,8 +313,6 @@ export default function CitiesPage() {
                   />
                   {isSearching && <RefreshCcw className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />}
                 </div>
-
-                {/* Search Results Dropdown */}
                 {searchResults.length > 0 && (
                   <div className="absolute top-full left-5 right-5 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-10 overflow-hidden">
                     {searchResults.map((res: GouvGeoFeature, idx) => (
@@ -255,79 +328,151 @@ export default function CitiesPage() {
                   </div>
                 )}
               </div>
-
-              {/* Step 2: Confirmation & Details */}
               {selectedCityGeo && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex items-center gap-3 p-4 bg-green-50 text-green-700 rounded-xl border border-green-100 mb-6">
                     <CheckCircle2 className="w-5 h-5 shrink-0" />
-                    <p className="text-sm font-medium">
-                      Limites géographiques (Polygone) récupérées avec succès pour <strong>{formData.name}</strong>.
-                    </p>
+                    <p className="text-sm font-medium">Limites géographiques récupérées pour <strong>{formData.name}</strong>.</p>
                   </div>
-
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Couleur Primaire</label>
                         <div className="flex items-center gap-3">
-                          <input 
-                            type="color" 
-                            value={formData.primaryColor}
-                            onChange={(e) => setFormData({...formData, primaryColor: e.target.value})}
-                            className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0"
-                          />
-                          <input 
-                            type="text" 
-                            value={formData.primaryColor}
-                            onChange={(e) => setFormData({...formData, primaryColor: e.target.value})}
-                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-municipall-blue outline-none"
-                          />
+                          <input type="color" value={formData.primaryColor} onChange={(e) => setFormData({...formData, primaryColor: e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0" />
+                          <input type="text" value={formData.primaryColor} onChange={(e) => setFormData({...formData, primaryColor: e.target.value})} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-municipall-blue outline-none" />
                         </div>
                       </div>
-                      
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Modules Activés (séparés par virgule)</label>
-                        <input 
-                          type="text" 
-                          value={formData.features}
-                          onChange={(e) => setFormData({...formData, features: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none"
-                        />
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Modules Activés</label>
+                        <input type="text" value={formData.features} onChange={(e) => setFormData({...formData, features: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none" />
                       </div>
-                    </div>
-                    
-                    <div className="bg-gray-100 rounded-xl border border-gray-200 overflow-hidden relative flex flex-col">
-                       {/* Map Preview Placeholder if Leaflet is not yet ready */}
-                       <div className="flex-1 bg-gray-50 flex items-center justify-center p-6 text-center">
-                         <div>
-                            <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                            <p className="text-xs font-bold text-gray-400">Aperçu Carte</p>
-                            <p className="text-[10px] text-gray-400 mt-2 font-mono bg-white p-2 rounded border border-gray-200 inline-block">
-                              GeoJSON: {JSON.stringify(selectedCityGeo.geometry).substring(0, 40)}...
-                            </p>
-                         </div>
-                       </div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
+            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-white">
+              <button onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors">Annuler</button>
+              <button onClick={handleSaveCity} disabled={!selectedCityGeo} className="px-5 py-2.5 rounded-xl font-bold text-white bg-municipall-blue hover:bg-blue-700 transition-colors disabled:opacity-50">Enregistrer la ville</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-white">
+      {/* Settings Modal (Manage Options/Features) */}
+      {isSettingsModalOpen && selectedCity && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-xl font-extrabold text-gray-900">Modules: {selectedCity.name}</h3>
+              <button onClick={() => setIsSettingsModalOpen(false)} className="text-gray-400 hover:text-gray-600 font-bold p-2">✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500 mb-4">Cochez les modules à activer pour cette ville.</p>
+              {['flux-live', 'agenda', 'reports', 'weather', 'security', 'transport'].map(feature => (
+                <label key={feature} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <span className="text-sm font-bold text-gray-700 capitalize">{feature.replace('-', ' ')}</span>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedCity.features.includes(feature)}
+                    onChange={(e) => {
+                      const newFeatures = e.target.checked 
+                        ? [...selectedCity.features, feature]
+                        : selectedCity.features.filter(f => f !== feature);
+                      setSelectedCity({ ...selectedCity, features: newFeatures });
+                    }}
+                    className="w-5 h-5 rounded border-gray-300 text-municipall-blue focus:ring-municipall-blue"
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+              <button onClick={() => setIsSettingsModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50">Annuler</button>
               <button 
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                onClick={() => handleUpdateFeatures(selectedCity.features)}
+                className="px-5 py-2.5 rounded-xl font-bold text-white bg-municipall-blue hover:bg-blue-700"
               >
-                Annuler
+                Mettre à jour
               </button>
-              <button 
-                onClick={handleSaveCity}
-                disabled={!selectedCityGeo}
-                className="px-5 py-2.5 rounded-xl font-bold text-white bg-municipall-blue hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-md shadow-municipall-blue/20"
-              >
-                Enregistrer la ville
-              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agents Modal (Real Agents & Invitations) */}
+      {isAgentsModalOpen && selectedCity && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="text-xl font-extrabold text-gray-900">Agents: {selectedCity.name}</h3>
+              <button onClick={() => setIsAgentsModalOpen(false)} className="text-gray-400 hover:text-gray-600 font-bold p-2">✕</button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+              {/* Invite Section */}
+              <div className="bg-municipall-blue/5 p-5 rounded-2xl border border-municipall-blue/10">
+                <h4 className="text-sm font-bold text-municipall-blue mb-3 flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> Inviter un nouvel agent
+                </h4>
+                <div className="flex gap-2">
+                  <input 
+                    type="email" 
+                    placeholder="email@commune.fr"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-municipall-blue"
+                  />
+                  <button 
+                    onClick={handleAddInvitation}
+                    className="px-4 py-2 bg-municipall-blue text-white rounded-xl font-bold text-sm"
+                  >
+                    Envoyer
+                  </button>
+                </div>
+              </div>
+
+              {/* Agents List */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-green-500" /> Agents Actifs ({cityAgents.length})
+                </h4>
+                <div className="space-y-2">
+                  {cityAgents.map(agent => (
+                    <div key={agent.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-500">
+                          {agent.name.charAt(0)}{agent.surname.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{agent.name} {agent.surname}</p>
+                          <p className="text-xs text-gray-500">{agent.email}</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-black uppercase rounded">Actif</span>
+                    </div>
+                  ))}
+                  {cityAgents.length === 0 && <p className="text-center text-xs text-gray-400 py-4">Aucun agent actif pour le moment.</p>}
+                </div>
+              </div>
+
+              {/* Pending Invitations */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <RefreshCcw className="w-4 h-4 text-orange-500" /> Invitations en attente ({cityInvitations.length})
+                </h4>
+                <div className="space-y-2">
+                  {cityInvitations.map(inv => (
+                    <div key={inv.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                      <p className="text-sm font-medium text-gray-600">{inv.email}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-gray-400">{new Date(inv.createdAt).toLocaleDateString()}</span>
+                        <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-black uppercase rounded">Pending</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
