@@ -15,42 +15,57 @@ import {
 import clsx from "clsx";
 import { api } from "@/lib/api";
 
+interface ColumnInfo {
+  name: string;
+  type: string;
+}
+
+interface TableData {
+  columns: ColumnInfo[];
+  data: Record<string, unknown>[];
+  total: number;
+}
+
 export default function DatabasePage() {
   const [tables, setTables] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"grid" | "sql">("grid");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [tableData, setTableData] = useState<{ columns: any[], data: any[], total: number } | null>(null);
+  const [tableData, setTableData] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // SQL Editor State
   const [sqlQuery, setSqlQuery] = useState("SELECT * FROM user LIMIT 10;");
-  const [sqlResult, setSqlResult] = useState<any[] | null>(null);
+  const [sqlResult, setSqlResult] = useState<Record<string, unknown>[] | null>(null);
   const [sqlError, setSqlError] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchTables = async () => {
       setIsLoading(true);
       const data = await api.getTables();
-      if (data) {
+      if (isMounted && data) {
         setTables(data);
         if (data.length > 0) setSelectedTable(data[0]);
       }
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
     };
     fetchTables();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     if (selectedTable && activeTab === "grid") {
       const fetchTableData = async () => {
         setIsLoading(true);
         const data = await api.getTableData(selectedTable);
-        if (data) setTableData(data);
-        setIsLoading(false);
+        if (isMounted && data) setTableData(data as TableData);
+        if (isMounted) setIsLoading(false);
       };
       fetchTableData();
     }
+    return () => { isMounted = false; };
   }, [selectedTable, activeTab]);
 
   const handleExecuteSql = async () => {
@@ -60,10 +75,10 @@ export default function DatabasePage() {
     setSqlResult(null);
 
     const result = await api.executeQuery(sqlQuery);
-    if (result && result.error) {
-      setSqlError(result.error);
+    if (result && typeof result === 'object' && 'error' in result) {
+      setSqlError(String(result.error));
     } else if (result) {
-      setSqlResult(Array.isArray(result) ? result : [result]);
+      setSqlResult(Array.isArray(result) ? (result as Record<string, unknown>[]) : [result as Record<string, unknown>]);
     }
     setIsExecuting(false);
   };
@@ -257,7 +272,7 @@ export default function DatabasePage() {
                               <tbody className="divide-y divide-gray-800">
                                 {sqlResult.map((row, i) => (
                                   <tr key={i} className="hover:bg-gray-800/50">
-                                    {Object.values(row).map((val: any, j) => (
+                                    {Object.values(row).map((val: unknown, j) => (
                                       <td key={j} className="px-4 py-3 text-gray-400 max-w-[300px] truncate">
                                         {val !== null ? String(val) : <span className="text-gray-600 italic">null</span>}
                                       </td>

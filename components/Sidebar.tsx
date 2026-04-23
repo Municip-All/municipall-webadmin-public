@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -12,18 +12,17 @@ import {
   Building2,
   ShieldCheck,
   Database,
-  RefreshCcw
 } from "lucide-react";
 import clsx from "clsx";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [env, setEnv] = useState("PROD");
-
-  useEffect(() => {
-    const savedEnv = localStorage.getItem("municipall_env") || "PROD";
-    setEnv(savedEnv);
-  }, []);
+  const [env, setEnv] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("municipall_env") || "PROD";
+    }
+    return "PROD";
+  });
 
   const toggleEnv = () => {
     const newEnv = env === "PROD" ? "DEV" : "PROD";

@@ -53,6 +53,23 @@ const getBaseUrl = () => {
   return process.env.NEXT_PUBLIC_API_URL || 'https://api.municipall.dev';
 };
 
+export interface City {
+  id: string;
+  name: string;
+  primaryColor: string;
+  secondaryColor?: string;
+  useGradient: boolean;
+  logoUrl: string;
+  features: string[];
+  boundary?: unknown;
+}
+
+export interface CityStats {
+  name: string;
+  users: number;
+  agents: number;
+}
+
 export const api = {
   async getStats(): Promise<MonitoringStats | null> {
     try {
@@ -146,9 +163,54 @@ export const api = {
       const json = await response.json();
       if (!json.success) throw new Error(json.error || 'Failed to execute query');
       return json.data;
-    } catch (error: any) {
-      console.error('[API DEBUG] Error executing query:', error);
-      return { error: error.message };
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('[API DEBUG] Error executing query:', err);
+      return { error: err.message };
+    }
+  },
+
+  async getCities(): Promise<City[] | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error fetching cities:', error);
+      return null;
+    }
+  },
+
+  async addCity(data: Partial<City> & { boundary?: unknown }): Promise<City | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Failed to add city');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error adding city:', error);
+      return null;
+    }
+  },
+
+  async getCityStats(): Promise<CityStats[] | null> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/stats`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('[API DEBUG] Error fetching city stats:', error);
+      return null;
     }
   }
 };
