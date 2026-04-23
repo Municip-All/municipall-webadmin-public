@@ -172,6 +172,18 @@ export default function CitiesPage() {
     }
   };
 
+  const handleForceAccept = async (invitationId: number) => {
+    const success = await api.forceAcceptInvitation(invitationId);
+    if (success && selectedCity) {
+      // Refresh agents and invitations lists
+      const agents = await api.getCityAgents(selectedCity.id);
+      const invitations = await api.getCityInvitations(selectedCity.id);
+      setCityAgents(agents || []);
+      setCityInvitations(invitations || []);
+      setRefreshKey(prev => prev + 1); // Refresh global stats
+    }
+  };
+
   return (
     <div className="p-8 h-screen flex flex-col overflow-auto">
       <header className="mb-8 flex items-end justify-between shrink-0">
@@ -466,6 +478,12 @@ export default function CitiesPage() {
                     <div key={inv.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
                       <p className="text-sm font-medium text-gray-600">{inv.email}</p>
                       <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => handleForceAccept(inv.id)}
+                          className="px-2 py-1 bg-municipall-blue/10 text-municipall-blue text-[10px] font-black uppercase rounded hover:bg-municipall-blue hover:text-white transition-colors"
+                        >
+                          Accept (Test)
+                        </button>
                         <span className="text-[10px] font-bold text-gray-400">{new Date(inv.createdAt).toLocaleDateString()}</span>
                         <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-black uppercase rounded">Pending</span>
                       </div>

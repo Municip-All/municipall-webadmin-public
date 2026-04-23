@@ -289,5 +289,19 @@ export const api = {
       console.error('[API DEBUG] Error creating invitation:', error);
       return null;
     }
+  },
+
+  async forceAcceptInvitation(invitationId: number): Promise<boolean> {
+    try {
+      const API_BASE_URL = getBaseUrl();
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/invitations/${invitationId}/force-accept`, {
+        method: 'POST',
+        cache: 'no-store'
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('[API DEBUG] Error force accepting invitation:', error);
+      return false;
+    }
   }
 };
