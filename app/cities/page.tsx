@@ -28,7 +28,10 @@ interface GouvGeoFeature {
   };
 }
 
+import { useToast } from "@/context/ToastContext";
+
 export default function CitiesPage() {
+  const { toast } = useToast();
   const [cities, setCities] = useState<City[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -127,7 +130,10 @@ export default function CitiesPage() {
       setIsAddModalOpen(false);
       setSelectedCityGeo(null);
       setFormData({ ...formData, name: "" });
-      setRefreshKey(prev => prev + 1); // Trigger refresh for stats
+      setRefreshKey(prev => prev + 1);
+      toast("success", `La ville de ${savedCity.name} a été intégrée avec succès !`);
+    } else {
+      toast("error", "Échec de l'intégration. Vérifiez que l'API est accessible et que l'ID n'existe pas déjà.");
     }
   };
 

@@ -49,6 +49,9 @@ const getBaseUrl = () => {
     if (env === 'DEV') {
       return process.env.NEXT_PUBLIC_API_URL_DEV || 'https://dev.api.municipall.dev';
     }
+    if (env === 'LOCAL') {
+      return 'http://localhost:3000';
+    }
   }
   return process.env.NEXT_PUBLIC_API_URL || 'https://api.municipall.dev';
 };
