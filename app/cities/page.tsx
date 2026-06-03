@@ -29,6 +29,8 @@ interface GouvGeoFeature {
 }
 
 import { useToast } from "@/context/ToastContext";
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
 
 export default function CitiesPage() {
   const { toast } = useToast();
@@ -191,40 +193,37 @@ export default function CitiesPage() {
   };
 
   return (
-    <div className="p-8 h-screen flex flex-col overflow-auto">
-      <header className="mb-8 flex items-end justify-between shrink-0">
-        <div>
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Villes Partenaires</h2>
-          <p className="text-sm text-gray-500 font-medium">Gérez vos contrats et visualisez les territoires couverts.</p>
-        </div>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-municipall-blue text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-municipall-blue/20"
-        >
-          <Plus className="w-5 h-5" />
-          Ajouter une Ville
-        </button>
-      </header>
+    <PageShell>
+      <PageHeader
+        title="Villes partenaires"
+        description="Gérez vos contrats et visualisez les territoires couverts."
+        actions={
+          <button type="button" onClick={() => setIsAddModalOpen(true)} className="btn-primary">
+            <Plus className="h-4 w-4" />
+            Ajouter une ville
+          </button>
+        }
+      />
 
       {/* Stats & Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 shrink-0">
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-municipall-blue" />
+        <div className="card-panel flex flex-col justify-center p-6">
+          <div className="mb-4 flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-municipall-blue/[0.08]">
+              <Building2 className="h-5 w-5 text-municipall-blue" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Villes Actives</h3>
-              <p className="text-3xl font-black text-gray-900">{cities.length}</p>
+              <h3 className="section-title">Villes actives</h3>
+              <p className="text-2xl font-semibold tabular-nums text-slate-900">{cities.length}</p>
             </div>
           </div>
-          <div className="text-xs font-medium text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500">
             Répartition en temps réel des utilisateurs
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <div className="card-panel lg:col-span-2 p-6">
+          <h3 className="mb-6 flex items-center gap-2 text-sm font-semibold text-slate-900">
             <UsersIcon className="w-4 h-4 text-municipall-blue" />
             Engagement par Ville
           </h3>
@@ -249,12 +248,12 @@ export default function CitiesPage() {
       </div>
 
       {/* Cities List */}
-      <h3 className="text-lg font-bold text-gray-900 mb-4">Territoires Couverts</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <h3 className="mb-4 text-sm font-semibold text-slate-900">Territoires couverts</h3>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {isLoading ? (
-          <div className="col-span-full flex justify-center py-12"><RefreshCcw className="w-8 h-8 animate-spin text-gray-300" /></div>
+          <div className="col-span-full flex justify-center py-12"><RefreshCcw className="h-7 w-7 animate-spin text-slate-300" /></div>
         ) : cities.map((city) => (
-          <div key={city.id} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col group">
+          <div key={city.id} className="card-panel group flex flex-col p-5">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
                 <div 
@@ -501,7 +500,7 @@ export default function CitiesPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
 

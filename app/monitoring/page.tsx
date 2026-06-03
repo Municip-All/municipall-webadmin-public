@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Box, 
-  Activity, 
-  Cpu, 
-  RefreshCcw, 
-  Clock
-} from "lucide-react";
+import { Box, Activity, Cpu, RefreshCcw, Clock } from "lucide-react";
 import clsx from "clsx";
 import { api, DockerContainer } from "@/lib/api";
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
+import Badge from "@/components/Badge";
 
 export default function MonitoringPage() {
   const [containers, setContainers] = useState<DockerContainer[]>([]);
@@ -33,7 +30,7 @@ export default function MonitoringPage() {
     const timer = setTimeout(() => {
       fetchContainers().catch(console.error);
     }, 0);
-    
+
     const interval = setInterval(() => {
       fetchContainers().catch(console.error);
     }, 15000);
@@ -45,101 +42,114 @@ export default function MonitoringPage() {
   }, []);
 
   return (
-    <div className="p-8">
-      <header className="mb-10 flex items-end justify-between">
-        <div>
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Monitoring Docker</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
-            <p>État des conteneurs sur le VPS Municip&apos;All.</p>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-1.5">
-              <RefreshCcw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} />
-              Mise à jour : {lastUpdated.toLocaleTimeString()}
-            </div>
-          </div>
-        </div>
-        
-        <button 
-          onClick={fetchContainers}
-          className="btn-primary"
-        >
-          <RefreshCcw className={clsx("w-5 h-5", isLoading && "animate-spin")} />
-          Actualiser
-        </button>
-      </header>
+    <PageShell>
+      <PageHeader
+        title="État du serveur"
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            Conteneurs Docker sur le VPS Municip&apos;All
+            <span className="text-slate-300">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <RefreshCcw className={clsx("h-3.5 w-3.5", isLoading && "animate-spin")} />
+              {lastUpdated.toLocaleTimeString("fr-FR")}
+            </span>
+          </span>
+        }
+        actions={
+          <button type="button" onClick={fetchContainers} className="btn-primary">
+            <RefreshCcw className={clsx("h-4 w-4", isLoading && "animate-spin")} />
+            Actualiser
+          </button>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {containers.map((container) => (
-          <div key={container.id} className="card-panel overflow-hidden group hover:border-municipall-blue/30">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div className={clsx(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shadow-sm",
-                    container.state === "running" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                  )}>
-                    <Box className="w-5 h-5" />
+          <article
+            key={container.id}
+            className="card-panel overflow-hidden"
+          >
+            <div className="p-5">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className={clsx(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1",
+                      container.state === "running"
+                        ? "bg-emerald-50 text-emerald-600 ring-emerald-100"
+                        : "bg-red-50 text-red-600 ring-red-100"
+                    )}
+                  >
+                    <Box className="h-5 w-5" />
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 leading-tight">{container.name}</h3>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest truncate max-w-[150px]">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold text-slate-900">
+                      {container.name}
+                    </h3>
+                    <p className="truncate text-[11px] text-slate-400">
                       {container.image}
                     </p>
                   </div>
                 </div>
-                <div className={clsx(
-                  "px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border",
-                  container.state === "running" 
-                    ? "bg-green-50 text-green-600 border-green-100" 
-                    : "bg-red-50 text-red-600 border-red-100"
-                )}>
+                <Badge
+                  variant={container.state === "running" ? "success" : "danger"}
+                >
                   {container.state}
-                </div>
+                </Badge>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wide">
-                    <Cpu className="w-3 h-3" />
+              <div className="mb-5 grid grid-cols-2 gap-4">
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                    <Cpu className="h-3 w-3" />
                     CPU
                   </div>
-                  <p className="text-sm font-extrabold text-gray-900">{container.cpu}</p>
+                  <p className="text-sm font-semibold tabular-nums text-slate-900">
+                    {container.cpu}
+                  </p>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wide">
-                    <Activity className="w-3 h-3" />
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                    <Activity className="h-3 w-3" />
                     RAM
                   </div>
-                  <p className="text-sm font-extrabold text-gray-900 truncate">{container.memory}</p>
+                  <p className="truncate text-sm font-semibold tabular-nums text-slate-900">
+                    {container.memory}
+                  </p>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3 h-3" />
+              <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-[11px] font-medium text-slate-400">
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
                   {container.uptime}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                  Stable
-                </div>
+                </span>
+                {container.state === "running" && (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-600">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                    Stable
+                  </span>
+                )}
               </div>
             </div>
-            
-            <div className={clsx(
-              "h-1 transition-all duration-500",
-              container.state === "running" ? "bg-green-500" : "bg-red-500"
-            )} style={{ width: container.state === "running" ? "100%" : "30%" }}></div>
-          </div>
+            <div
+              className={clsx(
+                "h-0.5",
+                container.state === "running" ? "bg-emerald-500" : "bg-red-400"
+              )}
+            />
+          </article>
         ))}
       </div>
 
       {containers.length === 0 && !isLoading && (
-        <div className="py-20 flex flex-col items-center justify-center text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200">
-          <Box className="w-16 h-16 mb-4 opacity-10" />
-          <p className="text-sm font-bold">Aucun conteneur détecté sur le VPS.</p>
+        <div className="card-panel flex flex-col items-center justify-center border-dashed py-16 text-center">
+          <Box className="mb-3 h-12 w-12 text-slate-200" />
+          <p className="text-sm font-medium text-slate-500">
+            Aucun conteneur détecté sur le VPS
+          </p>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

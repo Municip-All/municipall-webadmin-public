@@ -5,11 +5,14 @@ import Sidebar from "@/components/Sidebar";
 import AccessCodeGuard from "@/components/AccessCodeGuard";
 import { ToastProvider } from "@/context/ToastContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
-  title: "Municip'All Master Admin",
-  description: "Global management interface for Municip'All",
+  title: "Municip'All Panel",
+  description: "Interface d'administration globale Municip'All",
 };
 
 export default function RootLayout({
@@ -19,12 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={inter.className}>
+      <body className={`${inter.className} antialiased`}>
         <ToastProvider>
           <AccessCodeGuard>
-            <div className="flex h-screen bg-[#fcfcfd] overflow-hidden text-[#18181b]">
+            <div className="flex h-screen overflow-hidden bg-[var(--background)] text-slate-900">
               <Sidebar />
-              <main className="flex-1 overflow-hidden relative">
+              <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
                 {children}
               </main>
             </div>

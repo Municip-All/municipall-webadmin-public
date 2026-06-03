@@ -1,20 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Building2, 
-  Users, 
-  UserCircle2, 
-  Heart, 
+import {
+  Building2,
+  Users,
+  UserCircle2,
+  Heart,
   Search,
   Cpu,
   Activity,
   HardDrive,
   Zap,
-  RefreshCcw
+  RefreshCcw,
 } from "lucide-react";
 import clsx from "clsx";
 import StatCard from "@/components/StatCard";
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
+import Badge from "@/components/Badge";
+import SystemMetricCard from "@/components/SystemMetricCard";
 import { api, MonitoringStats, Activity as ActivityLog, CityStats } from "@/lib/api";
 
 export default function Dashboard() {
@@ -22,7 +26,6 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-
   const [cityStats, setCityStats] = useState<CityStats[]>([]);
 
   const fetchStats = async () => {
@@ -31,12 +34,13 @@ export default function Dashboard() {
       const [statsData, activityData, cityStatsData] = await Promise.all([
         api.getStats(),
         api.getActivity(),
-        api.getCityStats()
+        api.getCityStats(),
       ]);
-      
+
       if (statsData) setStats(statsData);
       if (activityData) setActivities(activityData);
-      if (cityStatsData) setCityStats(cityStatsData.sort((a, b) => b.users - a.users).slice(0, 3));
+      if (cityStatsData)
+        setCityStats(cityStatsData.sort((a, b) => b.users - a.users).slice(0, 3));
       setLastUpdated(new Date());
     } finally {
       setIsLoading(false);
@@ -47,11 +51,11 @@ export default function Dashboard() {
     const date = new Date(dateStr);
     const now = new Date();
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (diff < 60) return "À l'instant";
-    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
-    return date.toLocaleDateString();
+    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`;
+    return date.toLocaleDateString("fr-FR");
   };
 
   useEffect(() => {
@@ -70,260 +74,254 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="p-8">
-      <header className="mb-10 flex items-end justify-between">
-        <div>
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Tableau de Bord</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
-            <p>Données en temps réel du réseau Municip&apos;All.</p>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-1.5">
-              <RefreshCcw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} />
-              Mise à jour : {lastUpdated.toLocaleTimeString()}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-municipall-blue transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Rechercher une ville..."
-              className="pl-10 pr-4 py-2 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-municipall-blue/10 focus:border-municipall-blue/20 transition-all shadow-sm w-64"
-            />
-          </div>
-          <button onClick={fetchStats} className="p-2 bg-white border border-gray-100 rounded-xl text-gray-500 hover:text-gray-900 transition-colors shadow-sm">
-            <RefreshCcw className={clsx("w-5 h-5", isLoading && "animate-spin")} />
-          </button>
-        </div>
-      </header>
-
-      {/* Stats Grid - Solution Business */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <StatCard 
-          title="Villes Partenaires"
-          value={stats?.business.cities || "..."}
-          change="Live"
-          isPositive={true}
-          icon={Building2}
-          iconBg="bg-blue-50"
-          iconColor="text-blue-600"
-        />
-        <StatCard 
-          title="Citoyens Inscrits"
-          value={stats?.business.citizens.toLocaleString() || "..."}
-          change="Global"
-          isPositive={true}
-          icon={Users}
-          iconBg="bg-indigo-50"
-          iconColor="text-indigo-600"
-        />
-        <StatCard 
-          title="Agents Municipaux"
-          value={stats?.business.agents.toLocaleString() || "..."}
-          change="Vérifiés"
-          isPositive={true}
-          icon={UserCircle2}
-          iconBg="bg-green-50"
-          iconColor="text-green-600"
-        />
-        <StatCard 
-          title="Satisfaction Moyenne"
-          value={`${stats?.business.satisfaction || "4.8"}/5`}
-          change="Calculé"
-          isPositive={true}
-          icon={Heart}
-          iconBg="bg-red-50"
-          iconColor="text-red-600"
-        />
-      </div>
-
-      {/* Monitoring Section */}
-      <div className="mb-10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-amber-600" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900">Monitoring Système (VPS)</h3>
-          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-full border border-green-100 uppercase tracking-wider animate-pulse">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-            Live
+    <PageShell>
+      <PageHeader
+        title="Vue d'ensemble"
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            Données en temps réel du réseau Municip&apos;All
+            <span className="text-slate-300">·</span>
+            <span className="inline-flex items-center gap-1.5 text-slate-500">
+              <RefreshCcw className={clsx("h-3.5 w-3.5", isLoading && "animate-spin")} />
+              {lastUpdated.toLocaleTimeString("fr-FR")}
+            </span>
           </span>
+        }
+        actions={
+          <>
+            <div className="relative hidden sm:block">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher une ville…"
+                className="input-field w-56 pl-9"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={fetchStats}
+              className="btn-secondary !px-3"
+              aria-label="Actualiser"
+            >
+              <RefreshCcw className={clsx("h-4 w-4", isLoading && "animate-spin")} />
+            </button>
+          </>
+        }
+      />
+
+      <section className="mb-10">
+        <h2 className="section-title mb-4">Indicateurs clés</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Villes partenaires"
+            value={stats?.business.cities ?? "—"}
+            change="Live"
+            icon={Building2}
+          />
+          <StatCard
+            title="Citoyens inscrits"
+            value={stats?.business.citizens.toLocaleString("fr-FR") ?? "—"}
+            change="Global"
+            icon={Users}
+          />
+          <StatCard
+            title="Agents municipaux"
+            value={stats?.business.agents.toLocaleString("fr-FR") ?? "—"}
+            change="Vérifiés"
+            icon={UserCircle2}
+          />
+          <StatCard
+            title="Satisfaction moyenne"
+            value={`${stats?.business.satisfaction ?? "4.8"}/5`}
+            change="Calculé"
+            icon={Heart}
+          />
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card-panel p-5 bg-gray-900 text-white border-none shadow-xl shadow-gray-200">
-            <div className="flex justify-between items-start mb-4">
-              <Cpu className="w-6 h-6 text-indigo-400" />
-              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Load Average</span>
-            </div>
-            <h4 className="text-2xl font-bold mb-1">{stats?.system.cpu.load || 0}%</h4>
-            <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden mt-3">
-              <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${stats?.system.cpu.load || 0}%` }}></div>
-            </div>
-          </div>
-
-          <div className="card-panel p-5 bg-gray-900 text-white border-none shadow-xl shadow-gray-200">
-            <div className="flex justify-between items-start mb-4">
-              <Activity className="w-6 h-6 text-green-400" />
-              <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">RAM Usage</span>
-            </div>
-            <h4 className="text-2xl font-bold mb-1">{stats?.system.memory.used || 0} GB / {stats?.system.memory.total || 0} GB</h4>
-            <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden mt-3">
-              <div className="h-full bg-green-500 rounded-full transition-all duration-500" style={{ width: `${stats?.system.memory.percentage || 0}%` }}></div>
-            </div>
-          </div>
-
-          <div className="card-panel p-5 bg-gray-900 text-white border-none shadow-xl shadow-gray-200">
-            <div className="flex justify-between items-start mb-4">
-              <HardDrive className="w-6 h-6 text-blue-400" />
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Uptime</span>
-            </div>
-            <h4 className="text-2xl font-bold mb-1">{stats ? Math.floor(stats.system.uptime / 3600) : 0} <span className="text-xs font-medium text-gray-400">heures</span></h4>
-            <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden mt-3">
-              <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }}></div>
-            </div>
-          </div>
-
-          <div className="card-panel p-5 bg-gray-900 text-white border-none shadow-xl shadow-gray-200">
-            <div className="flex justify-between items-start mb-4">
-              <Zap className="w-6 h-6 text-amber-400" />
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Platform</span>
-            </div>
-            <h4 className="text-2xl font-bold mb-1 uppercase">{stats?.system.platform || "..."}</h4>
-            <div className="flex gap-1 items-end h-6 mt-2">
-              {[3, 5, 2, 8, 4, 6, 9, 5, 7].map((v, i) => (
-                <div key={i} className="flex-1 bg-amber-500/20 rounded-sm" style={{ height: `${v * 10}%` }}></div>
-              ))}
-            </div>
-          </div>
+      <section className="mb-10">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h2 className="section-title">Infrastructure VPS</h2>
+          <Badge variant="live" dot>
+            Live
+          </Badge>
         </div>
-      </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <SystemMetricCard
+            label="Charge CPU"
+            value={`${stats?.system.cpu.load ?? 0}%`}
+            icon={Cpu}
+            progress={stats?.system.cpu.load ?? 0}
+            accent="brand"
+          />
+          <SystemMetricCard
+            label="Mémoire"
+            value={`${stats?.system.memory.used ?? 0} / ${stats?.system.memory.total ?? 0} Go`}
+            icon={Activity}
+            progress={stats?.system.memory.percentage ?? 0}
+            accent="emerald"
+          />
+          <SystemMetricCard
+            label="Uptime"
+            value={
+              <>
+                {stats ? Math.floor(stats.system.uptime / 3600) : 0}
+                <span className="ml-1 text-sm font-medium text-slate-500">h</span>
+              </>
+            }
+            icon={HardDrive}
+            accent="sky"
+          />
+          <SystemMetricCard
+            label="Plateforme"
+            value={(stats?.system.platform ?? "—").toString()}
+            icon={Zap}
+            accent="amber"
+          />
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Chart Area */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="card-panel p-8">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-bold text-gray-900">Activité des Villes</h3>
-              <select className="bg-gray-50 border-none text-xs font-bold text-gray-500 rounded-lg px-3 py-1.5 focus:ring-0">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <div className="card-panel p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Activité des villes
+              </h3>
+              <select className="rounded-lg border-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 focus:ring-2 focus:ring-municipall-blue/20">
                 <option>7 derniers jours</option>
                 <option>30 derniers jours</option>
               </select>
             </div>
-            
-            <div className="h-64 flex items-end justify-between gap-2">
+            <div className="flex h-52 items-end justify-between gap-2">
               {[65, 45, 75, 55, 90, 65, 80].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                  <div 
-                    className="w-full bg-indigo-50 group-hover:bg-municipall-blue transition-colors rounded-lg relative overflow-hidden"
+                <div key={i} className="group flex flex-1 flex-col items-center gap-2">
+                  <div
+                    className="w-full rounded-lg bg-municipall-blue/[0.08] transition-colors group-hover:bg-municipall-blue/20"
                     style={{ height: `${h}%` }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent"></div>
-                  </div>
-                  <span className="text-[10px] font-bold text-gray-400">Jour {i+1}</span>
+                  />
+                  <span className="text-[10px] font-medium text-slate-400">
+                    J{i + 1}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="card-panel p-6">
-              <h3 className="text-base font-bold text-gray-900 mb-6">Top Villes (Citoyens)</h3>
-              <div className="space-y-4">
+              <h3 className="mb-4 text-sm font-semibold text-slate-900">
+                Top villes (citoyens)
+              </h3>
+              <div className="space-y-2">
                 {cityStats.length > 0 ? (
                   cityStats.map((city, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100/50">
-                      <span className="text-sm font-bold text-gray-700">{city.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-extrabold text-gray-900">{city.users}</span>
-                        <Users className="w-3 h-3 text-indigo-500" />
-                      </div>
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100"
+                    >
+                      <span className="text-sm font-medium text-slate-700">
+                        {city.name}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-slate-900">
+                        {city.users}
+                      </span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-gray-400 font-medium text-center py-4">Aucune donnée disponible.</p>
+                  <p className="py-6 text-center text-sm text-slate-400">
+                    Aucune donnée disponible
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="card-panel p-6">
-              <h3 className="text-base font-bold text-gray-900 mb-6">Répartition Utilisateurs</h3>
+              <h3 className="mb-4 text-sm font-semibold text-slate-900">
+                Répartition utilisateurs
+              </h3>
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold text-gray-500">
-                    <span>Citoyens</span>
-                    <span>92%</span>
+                {[
+                  { label: "Citoyens", pct: 92, color: "bg-municipall-blue" },
+                  { label: "Agents", pct: 7, color: "bg-municipall-indigo" },
+                  { label: "Super admins", pct: 1, color: "bg-slate-700" },
+                ].map((row) => (
+                  <div key={row.label} className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-medium text-slate-500">
+                      <span>{row.label}</span>
+                      <span>{row.pct}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={clsx("h-full rounded-full", row.color)}
+                        style={{ width: `${row.pct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-municipall-blue rounded-full" style={{ width: '92%' }}></div>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold text-gray-500">
-                    <span>Agents</span>
-                    <span>7%</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-municipall-indigo rounded-full" style={{ width: '7%' }}></div>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold text-gray-500">
-                    <span>Super Admins</span>
-                    <span>1%</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gray-900 rounded-full" style={{ width: '1%' }}></div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Sidebar Activity */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           <div className="card-panel p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Activité Récente</h3>
-            <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1px] before:bg-gray-100">
+            <h3 className="mb-5 text-sm font-semibold text-slate-900">
+              Activité récente
+            </h3>
+            <div className="relative space-y-5 pl-1 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-slate-200">
               {activities.length > 0 ? (
                 activities.map((activity, idx) => (
-                  <div key={idx} className="flex gap-4 relative z-10">
-                    <div className={clsx(
-                      "w-[23px] h-[23px] rounded-full border-4 border-white shadow-sm flex items-center justify-center",
-                      activity.type === "city" ? "bg-blue-500" : 
-                      activity.type === "user" ? "bg-green-500" : 
-                      activity.type === "agent" ? "bg-indigo-500" : "bg-red-500"
-                    )}></div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-800 leading-snug">{activity.text}</p>
-                      <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-wide">{formatTime(activity.time)}</p>
+                  <div key={idx} className="relative z-10 flex gap-3">
+                    <div
+                      className={clsx(
+                        "mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white",
+                        activity.type === "city"
+                          ? "bg-sky-500"
+                          : activity.type === "user"
+                            ? "bg-emerald-500"
+                            : activity.type === "agent"
+                              ? "bg-municipall-indigo"
+                              : "bg-red-500"
+                      )}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium leading-snug text-slate-800">
+                        {activity.text}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        {formatTime(activity.time)}
+                      </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-gray-400 font-medium text-center py-4">Aucune activité récente.</p>
+                <p className="py-4 text-center text-sm text-slate-400">
+                  Aucune activité récente
+                </p>
               )}
             </div>
-            <button className="w-full mt-8 py-2 text-xs font-bold text-municipall-blue hover:text-municipall-indigo transition-colors border border-indigo-50 rounded-lg hover:bg-indigo-50/50">
+            <button type="button" className="btn-ghost mt-5 w-full text-municipall-blue">
               Voir tout l&apos;historique
             </button>
           </div>
 
-          <div className="bg-municipall-blue rounded-2xl p-6 text-white shadow-xl shadow-municipall-blue/20 relative overflow-hidden">
-            <div className="relative z-10">
-              <h3 className="text-lg font-bold mb-2">Besoin d&apos;aide ?</h3>
-              <p className="text-xs text-white/70 leading-relaxed mb-4">L&apos;équipe technique est à votre disposition pour toute intervention sur les instances villes.</p>
-              <button className="px-4 py-2 bg-white text-municipall-blue text-xs font-bold rounded-lg hover:bg-indigo-50 transition-colors">
-                Contacter le support
-              </button>
-            </div>
-            <Building2 className="absolute -bottom-4 -right-4 w-24 h-24 text-white/5 rotate-12" />
+          <div className="relative overflow-hidden rounded-2xl bg-municipall-blue p-6 text-white shadow-premium">
+            <h3 className="text-sm font-semibold">Besoin d&apos;aide ?</h3>
+            <p className="mt-2 text-xs leading-relaxed text-white/75">
+              L&apos;équipe technique intervient sur les instances villes et
+              l&apos;infrastructure.
+            </p>
+            <button
+              type="button"
+              className="mt-4 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-municipall-blue transition-colors hover:bg-slate-50"
+            >
+              Contacter le support
+            </button>
+            <Building2 className="pointer-events-none absolute -bottom-3 -right-3 h-20 w-20 rotate-12 text-white/[0.06]" />
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

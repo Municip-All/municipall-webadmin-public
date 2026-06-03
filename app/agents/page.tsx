@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { api, City, Invitation } from "@/lib/api";
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
 
 export default function AgentsPage() {
   const [cities, setCities] = useState<City[]>([]);
@@ -73,26 +75,26 @@ export default function AgentsPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <header className="mb-10">
-        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Gestion des Agents</h2>
-        <p className="text-sm text-gray-500 font-medium">Inscrivez de nouveaux agents municipaux et définissez leurs droits d&apos;accès.</p>
-      </header>
+    <PageShell className="max-w-5xl">
+      <PageHeader
+        title="Agents"
+        description="Inscrivez de nouveaux agents municipaux et définissez leurs droits d'accès."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3">
           <div className="card-panel p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-municipall-blue">
-                <UserPlus className="w-5 h-5" />
+            <div className="mb-8 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-municipall-blue/[0.08] text-municipall-blue">
+                <UserPlus className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">Nouvel Agent</h3>
+              <h3 className="text-base font-semibold text-slate-900">Nouvel agent</h3>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nom complet</label>
+                  <label className="section-title">Nom complet</label>
                   <div className="relative">
                     <input 
                       type="text" 
@@ -100,35 +102,35 @@ export default function AgentsPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       placeholder="ex: Jean Dupont"
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-4 pr-4 py-3 text-sm focus:ring-2 focus:ring-municipall-blue/10 outline-none transition-all"
+                      className="input-field"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email Institutionnel</label>
+                  <label className="section-title">Email institutionnel</label>
                   <div className="relative">
-                    <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                    <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
                     <input 
                       type="email" 
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                       placeholder="agent@ville.gouv.fr"
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-municipall-blue/10 outline-none transition-all"
+                      className="input-field pr-10"
                     />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Affectation (Ville)</label>
+                <label className="section-title">Affectation (ville)</label>
                 <div className="relative">
-                  <Building2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  <Building2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300 pointer-events-none" />
                   <select 
                     required
                     value={formData.cityId}
                     onChange={(e) => setFormData({...formData, cityId: e.target.value})}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-municipall-blue/10 outline-none appearance-none transition-all"
+                    className="input-field appearance-none pr-10"
                   >
                     <option value="">Sélectionner une ville...</option>
                     {cities.map(city => (
@@ -139,7 +141,7 @@ export default function AgentsPage() {
               </div>
 
               <div className="space-y-4">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Niveau de Permissions</label>
+                <label className="section-title">Niveau de permissions</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button 
                     type="button"
@@ -147,8 +149,8 @@ export default function AgentsPage() {
                     className={clsx(
                       "p-4 rounded-xl border text-left transition-all",
                       formData.permission === "standard" 
-                        ? "bg-indigo-50 border-municipall-blue ring-1 ring-municipall-blue" 
-                        : "bg-white border-gray-100 hover:border-gray-200"
+                        ? "border-municipall-blue bg-municipall-blue/[0.06] ring-1 ring-municipall-blue/30" 
+                        : "border-slate-200 bg-white hover:border-slate-300"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -164,8 +166,8 @@ export default function AgentsPage() {
                     className={clsx(
                       "p-4 rounded-xl border text-left transition-all",
                       formData.permission === "admin" 
-                        ? "bg-indigo-50 border-municipall-blue ring-1 ring-municipall-blue" 
-                        : "bg-white border-gray-100 hover:border-gray-200"
+                        ? "border-municipall-blue bg-municipall-blue/[0.06] ring-1 ring-municipall-blue/30" 
+                        : "border-slate-200 bg-white hover:border-slate-300"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -245,6 +247,6 @@ export default function AgentsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
