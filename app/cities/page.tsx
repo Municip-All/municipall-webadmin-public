@@ -57,7 +57,8 @@ export default function CitiesPage() {
     name: "",
     primaryColor: "#244FE5",
     logoUrl: "",
-    features: "flux-live,agenda,reports"
+    features: "flux-live,agenda,reports",
+    dataRetentionPolicy: "",
   });
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -122,7 +123,8 @@ export default function CitiesPage() {
       primaryColor: formData.primaryColor,
       logoUrl: formData.logoUrl,
       features: formData.features.split(',').map(f => f.trim()),
-      boundary: selectedCityGeo.geometry
+      boundary: selectedCityGeo.geometry,
+      dataRetentionPolicy: formData.dataRetentionPolicy.trim() || undefined,
     };
 
     const savedCity = await api.addCity(newCityPayload);
@@ -131,7 +133,7 @@ export default function CitiesPage() {
       setCities([...cities, savedCity]);
       setIsAddModalOpen(false);
       setSelectedCityGeo(null);
-      setFormData({ ...formData, name: "" });
+      setFormData({ name: "", primaryColor: "#244FE5", logoUrl: "", features: "flux-live,agenda,reports", dataRetentionPolicy: "" });
       setRefreshKey(prev => prev + 1);
       toast("success", `La ville de ${savedCity.name} a été intégrée avec succès !`);
     } else {
@@ -153,12 +155,18 @@ export default function CitiesPage() {
     setIsSettingsModalOpen(true);
   };
 
-  const handleUpdateFeatures = async (features: string[]) => {
+  const handleSaveCitySettings = async () => {
     if (!selectedCity) return;
-    const updated = await api.updateCity(selectedCity.id, { features });
+    const updated = await api.updateCity(selectedCity.id, {
+      features: selectedCity.features,
+      dataRetentionPolicy: selectedCity.dataRetentionPolicy?.trim() || undefined,
+    });
     if (updated) {
       setCities(cities.map(c => c.id === updated.id ? updated : c));
       setIsSettingsModalOpen(false);
+      toast("success", `Configuration de ${updated.name} enregistrée.`);
+    } else {
+      toast("error", "Échec de la mise à jour.");
     }
   };
 
@@ -351,19 +359,32 @@ export default function CitiesPage() {
                     <CheckCircle2 className="w-5 h-5 shrink-0" />
                     <p className="text-sm font-medium">Limites géographiques récupérées pour <strong>{formData.name}</strong>.</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Couleur Primaire</label>
-                        <div className="flex items-center gap-3">
-                          <input type="color" value={formData.primaryColor} onChange={(e) => setFormData({...formData, primaryColor: e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0" />
-                          <input type="text" value={formData.primaryColor} onChange={(e) => setFormData({...formData, primaryColor: e.target.value})} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-municipall-blue outline-none" />
-                        </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Couleur Primaire</label>
+                      <div className="flex items-center gap-3">
+                        <input type="color" value={formData.primaryColor} onChange={(e) => setFormData({...formData, primaryColor: e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0" />
+                        <input type="text" value={formData.primaryColor} onChange={(e) => setFormData({...formData, primaryColor: e.target.value})} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-municipall-blue outline-none" />
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Modules Activés</label>
-                        <input type="text" value={formData.features} onChange={(e) => setFormData({...formData, features: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none" />
-                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Modules Activés</label>
+                      <input type="text" value={formData.features} onChange={(e) => setFormData({...formData, features: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                        Durées de conservation (RGPD) — contrat commune
+                      </label>
+                      <textarea
+                        value={formData.dataRetentionPolicy}
+                        onChange={(e) => setFormData({ ...formData, dataRetentionPolicy: e.target.value })}
+                        rows={5}
+                        placeholder="Ex. : Signalements conservés 36 mois après clôture. Messages contact 24 mois. Données compte supprimées sous 30 jours après demande d'effacement."
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none resize-y"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Ce texte est affiché dans l&apos;app mobile (politique de confidentialité) pour les citoyens de cette ville.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -380,37 +401,54 @@ export default function CitiesPage() {
       {/* Settings Modal (Manage Options/Features) */}
       {isSettingsModalOpen && selectedCity && (
         <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-xl font-extrabold text-gray-900">Modules: {selectedCity.name}</h3>
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
+              <h3 className="text-xl font-extrabold text-gray-900">Configuration : {selectedCity.name}</h3>
               <button onClick={() => setIsSettingsModalOpen(false)} className="text-gray-400 hover:text-gray-600 font-bold p-2">✕</button>
             </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-500 mb-4">Cochez les modules à activer pour cette ville.</p>
-              {['flux-live', 'agenda', 'reports', 'weather', 'security', 'transport'].map(feature => (
-                <label key={feature} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
-                  <span className="text-sm font-bold text-gray-700 capitalize">{feature.replace('-', ' ')}</span>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedCity.features.includes(feature)}
-                    onChange={(e) => {
-                      const newFeatures = e.target.checked 
-                        ? [...selectedCity.features, feature]
-                        : selectedCity.features.filter(f => f !== feature);
-                      setSelectedCity({ ...selectedCity, features: newFeatures });
-                    }}
-                    className="w-5 h-5 rounded border-gray-300 text-municipall-blue focus:ring-municipall-blue"
-                  />
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+              <div>
+                <p className="text-sm font-bold text-gray-900 mb-3">Modules activés</p>
+                {['flux-live', 'agenda', 'reports', 'weather', 'security', 'transport'].map(feature => (
+                  <label key={feature} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors mb-2">
+                    <span className="text-sm font-bold text-gray-700 capitalize">{feature.replace('-', ' ')}</span>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCity.features.includes(feature)}
+                      onChange={(e) => {
+                        const newFeatures = e.target.checked 
+                          ? [...selectedCity.features, feature]
+                          : selectedCity.features.filter(f => f !== feature);
+                        setSelectedCity({ ...selectedCity, features: newFeatures });
+                      }}
+                      className="w-5 h-5 rounded border-gray-300 text-municipall-blue focus:ring-municipall-blue"
+                    />
+                  </label>
+                ))}
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Durées de conservation (RGPD)
                 </label>
-              ))}
+                <p className="text-xs text-gray-500 mb-2">
+                  Selon le contrat signé avec la commune. Affiché dans l&apos;application mobile pour les citoyens de {selectedCity.name}.
+                </p>
+                <textarea
+                  value={selectedCity.dataRetentionPolicy || ""}
+                  onChange={(e) => setSelectedCity({ ...selectedCity, dataRetentionPolicy: e.target.value })}
+                  rows={6}
+                  placeholder="Ex. : Signalements : 36 mois après clôture. Tickets contact : 24 mois. Comptes inactifs : 3 ans."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-municipall-blue outline-none resize-y"
+                />
+              </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsSettingsModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50">Annuler</button>
               <button 
-                onClick={() => handleUpdateFeatures(selectedCity.features)}
+                onClick={handleSaveCitySettings}
                 className="px-5 py-2.5 rounded-xl font-bold text-white bg-municipall-blue hover:bg-blue-700"
               >
-                Mettre à jour
+                Enregistrer
               </button>
             </div>
           </div>

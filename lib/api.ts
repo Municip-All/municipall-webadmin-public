@@ -65,6 +65,7 @@ export interface City {
   logoUrl: string;
   features: string[];
   boundary?: unknown;
+  dataRetentionPolicy?: string;
 }
 
 export interface CityStats {
