@@ -50,14 +50,22 @@ export default function MonitoringPage() {
             Conteneurs Docker sur le VPS Municip&apos;All
             <span className="text-slate-300">·</span>
             <span className="inline-flex items-center gap-1.5">
-              <RefreshCcw className={clsx("h-3.5 w-3.5", isLoading && "animate-spin")} />
+              <RefreshCcw
+                className={clsx("h-3.5 w-3.5", isLoading && "animate-spin")}
+              />
               {lastUpdated.toLocaleTimeString("fr-FR")}
             </span>
           </span>
         }
         actions={
-          <button type="button" onClick={fetchContainers} className="btn-primary">
-            <RefreshCcw className={clsx("h-4 w-4", isLoading && "animate-spin")} />
+          <button
+            type="button"
+            onClick={fetchContainers}
+            className="btn-primary"
+          >
+            <RefreshCcw
+              className={clsx("h-4 w-4", isLoading && "animate-spin")}
+            />
             Actualiser
           </button>
         }
@@ -65,10 +73,7 @@ export default function MonitoringPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {containers.map((container) => (
-          <article
-            key={container.id}
-            className="card-panel overflow-hidden"
-          >
+          <article key={container.id} className="card-panel overflow-hidden">
             <div className="p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -77,7 +82,7 @@ export default function MonitoringPage() {
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1",
                       container.state === "running"
                         ? "bg-emerald-50 text-emerald-600 ring-emerald-100"
-                        : "bg-red-50 text-red-600 ring-red-100"
+                        : "bg-red-50 text-red-600 ring-red-100",
                     )}
                   >
                     <Box className="h-5 w-5" />
@@ -135,7 +140,7 @@ export default function MonitoringPage() {
             <div
               className={clsx(
                 "h-0.5",
-                container.state === "running" ? "bg-emerald-500" : "bg-red-400"
+                container.state === "running" ? "bg-emerald-500" : "bg-red-400",
               )}
             />
           </article>

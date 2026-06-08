@@ -45,7 +45,10 @@ export default function SystemMetricCard({
       {progress !== undefined && (
         <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
           <div
-            className={clsx("h-full rounded-full transition-all duration-500", a.bar)}
+            className={clsx(
+              "h-full rounded-full transition-all duration-500",
+              a.bar,
+            )}
             style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
           />
         </div>

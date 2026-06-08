@@ -29,14 +29,16 @@ export default function Badge({
       className={clsx(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset",
         variants[variant],
-        className
+        className,
       )}
     >
       {dot && (
         <span
           className={clsx(
             "h-1.5 w-1.5 rounded-full",
-            variant === "live" ? "animate-pulse bg-emerald-500" : "bg-current opacity-70"
+            variant === "live"
+              ? "animate-pulse bg-emerald-500"
+              : "bg-current opacity-70",
           )}
         />
       )}

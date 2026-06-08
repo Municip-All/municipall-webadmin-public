@@ -4,6 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import AccessCodeGuard from "@/components/AccessCodeGuard";
 import { ToastProvider } from "@/context/ToastContext";
+import { ConfirmDialogProvider } from "@/context/ConfirmDialogContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,14 +25,16 @@ export default function RootLayout({
     <html lang="fr">
       <body className={`${inter.className} antialiased`}>
         <ToastProvider>
-          <AccessCodeGuard>
-            <div className="flex h-screen overflow-hidden bg-[var(--background)] text-slate-900">
-              <Sidebar />
-              <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-                {children}
-              </main>
-            </div>
-          </AccessCodeGuard>
+          <ConfirmDialogProvider>
+            <AccessCodeGuard>
+              <div className="flex h-screen overflow-hidden bg-[var(--background)] text-slate-900">
+                <Sidebar />
+                <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+                  {children}
+                </main>
+              </div>
+            </AccessCodeGuard>
+          </ConfirmDialogProvider>
         </ToastProvider>
       </body>
     </html>

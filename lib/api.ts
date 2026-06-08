@@ -5,9 +5,19 @@ export interface User {
   email: string;
   role: string;
   cityId?: string;
+  points?: number;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  update_at?: string;
 }
+
+export type UpdateUserPayload = {
+  name?: string;
+  surname?: string;
+  role?: string;
+  cityId?: string;
+  password?: string;
+};
 
 export interface DockerContainer {
   id: string;
@@ -43,18 +53,28 @@ export interface MonitoringStats {
   };
 }
 
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    const env = localStorage.getItem('municipall_env') || 'PROD';
-    if (env === 'DEV') {
-      return process.env.NEXT_PUBLIC_API_URL_DEV || 'https://dev.api.municipall.dev';
-    }
-    if (env === 'LOCAL') {
-      return 'http://localhost:3000';
-    }
+import { adminFetch, parseAdminJson } from "./adminApi";
+
+async function adminRequest<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T | null> {
+  try {
+    const response = await adminFetch(path, init);
+    return await parseAdminJson<T>(response);
+  } catch (error) {
+    console.error(`[API] ${path}:`, error);
+    return null;
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'https://api.municipall.dev';
-};
+}
+
+async function adminRequestOrThrow<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await adminFetch(path, init);
+  return parseAdminJson<T>(response);
+}
 
 export interface City {
   id: string;
@@ -85,7 +105,7 @@ export interface Invitation {
 }
 
 export interface Activity {
-  type: 'city' | 'user' | 'agent' | 'alert';
+  type: "city" | "user" | "agent" | "alert";
   text: string;
   time: string;
   cityId?: string;
@@ -93,241 +113,180 @@ export interface Activity {
 
 export const api = {
   async getStats(): Promise<MonitoringStats | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      return null;
-    }
+    return adminRequest<MonitoringStats>(`/api/v1/admin/stats`, {
+      cache: "no-store",
+    });
   },
 
   async getActivity(): Promise<Activity[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/activity`, {
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('Error fetching activity:', error);
-      return null;
-    }
+    return adminRequest<Activity[]>(`/api/v1/admin/activity`, {
+      cache: "no-store",
+    });
   },
 
   async getUsers(): Promise<User[] | null> {
+    return adminRequest<User[]>(`/api/v1/admin/users`, { cache: "no-store" });
+  },
+
+  async getUser(id: number): Promise<User | null> {
+    return adminRequest<User>(`/api/v1/admin/users/${id}`, {
+      cache: "no-store",
+    });
+  },
+
+  async updateUser(id: number, data: UpdateUserPayload): Promise<User | null> {
+    return adminRequest<User>(`/api/v1/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+      cache: "no-store",
+    });
+  },
+
+  async deleteUser(id: number): Promise<boolean> {
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
-        cache: 'no-store'
+      const response = await adminFetch(`/api/v1/admin/users/${id}`, {
+        method: "DELETE",
+        cache: "no-store",
       });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
+      return response.ok;
     } catch (error) {
-      console.error('[API DEBUG] Error fetching users:', error);
-      return null;
+      console.error("[API] deleteUser:", error);
+      return false;
     }
   },
 
   async getDockerContainers(): Promise<DockerContainer[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/docker`, {
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error fetching docker stats:', error);
-      return null;
-    }
+    return adminRequest<DockerContainer[]>(`/api/v1/admin/docker`, {
+      cache: "no-store",
+    });
   },
 
   async getTables(): Promise<string[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/database/tables`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error fetching tables:', error);
-      return null;
-    }
+    return adminRequest<string[]>(`/api/v1/admin/database/tables`, {
+      cache: "no-store",
+    });
   },
 
   async getTableData(tableName: string, limit = 50, offset = 0) {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error(`[API DEBUG] Error fetching table data for ${tableName}:`, error);
-      return null;
-    }
+    return adminRequest(
+      `/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`,
+      { cache: "no-store" },
+    );
   },
 
   async executeQuery(query: string) {
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/database/query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await adminFetch(`/api/v1/admin/database/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
-        cache: 'no-store'
+        cache: "no-store",
       });
       const json = await response.json();
-      if (!json.success) throw new Error(json.error || 'Failed to execute query');
+      if (!json.success)
+        throw new Error(json.error || "Failed to execute query");
       return json.data;
     } catch (error: unknown) {
       const err = error as Error;
-      console.error('[API DEBUG] Error executing query:', err);
+      console.error("[API DEBUG] Error executing query:", err);
       return { error: err.message };
     }
   },
 
   async getCities(): Promise<City[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error fetching cities:', error);
-      return null;
-    }
+    return adminRequest<City[]>(`/api/v1/admin/cities`, { cache: "no-store" });
   },
 
-  async addCity(data: Partial<City> & { boundary?: unknown }): Promise<City | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('Failed to add city');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error adding city:', error);
-      return null;
-    }
+  async addCity(
+    data: Partial<City> & { boundary?: unknown },
+  ): Promise<City | null> {
+    return adminRequest<City>(`/api/v1/admin/cities`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      cache: "no-store",
+    });
   },
 
   async updateCity(id: string, data: Partial<City>): Promise<City | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('Failed to update city');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error updating city:', error);
-      return null;
-    }
+    return adminRequest<City>(`/api/v1/admin/cities/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+      cache: "no-store",
+    });
   },
 
   async deleteCity(id: string): Promise<boolean> {
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${id}`, {
-        method: 'DELETE',
-        cache: 'no-store'
+      const response = await adminFetch(`/api/v1/admin/cities/${id}`, {
+        method: "DELETE",
+        cache: "no-store",
       });
       return response.ok;
     } catch (error) {
-      console.error('[API DEBUG] Error deleting city:', error);
+      console.error("[API DEBUG] Error deleting city:", error);
       return false;
     }
   },
 
   async getCityStats(): Promise<CityStats[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/stats`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error fetching city stats:', error);
-      return null;
-    }
+    return adminRequest<CityStats[]>(`/api/v1/admin/cities/stats`, {
+      cache: "no-store",
+    });
   },
 
   async getCityAgents(cityId: string): Promise<User[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${cityId}/agents`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch agents');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error fetching city agents:', error);
-      return null;
-    }
+    return adminRequest<User[]>(`/api/v1/admin/cities/${cityId}/agents`, {
+      cache: "no-store",
+    });
   },
 
   async getCityInvitations(cityId: string): Promise<Invitation[] | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${cityId}/invitations`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch invitations');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error fetching city invitations:', error);
-      return null;
-    }
+    return adminRequest<Invitation[]>(
+      `/api/v1/admin/cities/${cityId}/invitations`,
+      {
+        cache: "no-store",
+      },
+    );
   },
 
-  async createInvitation(cityId: string, email: string): Promise<Invitation | null> {
-    try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${cityId}/invitations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('Failed to create invitation');
-      const json = await response.json();
-      return json.data;
-    } catch (error) {
-      console.error('[API DEBUG] Error creating invitation:', error);
-      return null;
-    }
+  async createMayor(
+    cityId: string,
+    data: { email: string; name: string; surname: string; password: string },
+  ): Promise<User> {
+    return adminRequestOrThrow<User>(`/api/v1/admin/cities/${cityId}/mayor`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      cache: "no-store",
+    });
+  },
+
+  async createInvitation(
+    cityId: string,
+    data: { email: string; name?: string; role?: string },
+  ): Promise<Invitation | null> {
+    return adminRequest<Invitation>(
+      `/api/v1/admin/cities/${cityId}/invitations`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        cache: "no-store",
+      },
+    );
   },
 
   async forceAcceptInvitation(invitationId: number): Promise<boolean> {
     try {
-      const API_BASE_URL = getBaseUrl();
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/invitations/${invitationId}/force-accept`, {
-        method: 'POST',
-        cache: 'no-store'
-      });
+      const response = await adminFetch(
+        `/api/v1/admin/invitations/${invitationId}/force-accept`,
+        {
+          method: "POST",
+          cache: "no-store",
+        },
+      );
       return response.ok;
     } catch (error) {
-      console.error('[API DEBUG] Error force accepting invitation:', error);
+      console.error("[API DEBUG] Error force accepting invitation:", error);
       return false;
     }
-  }
+  },
 };

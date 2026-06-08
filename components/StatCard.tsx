@@ -29,7 +29,7 @@ export default function StatCard({
               "rounded-md px-2 py-0.5 text-[11px] font-semibold",
               isPositive
                 ? "bg-emerald-50 text-emerald-700"
-                : "bg-red-50 text-red-700"
+                : "bg-red-50 text-red-700",
             )}
           >
             {change}

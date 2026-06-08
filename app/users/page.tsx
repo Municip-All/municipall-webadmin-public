@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Search,
-  MoreVertical,
   ArrowUpDown,
   MapPin,
   UserCircle,
@@ -14,29 +13,48 @@ import clsx from "clsx";
 import { api, User, City } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
+import UserActionsMenu from "@/components/users/UserActionsMenu";
+import UserEditModal, {
+  type UserEditForm,
+} from "@/components/users/UserEditModal";
+import { useToast } from "@/context/ToastContext";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
+import { roleBadgeClass, roleLabel } from "@/lib/userRoles";
 
 export default function UsersPage() {
+  const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [users, setUsers] = useState<User[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCity, setFilterCity] = useState("Toutes");
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+
+    const loadData = async () => {
       const [userData, cityData] = await Promise.all([
         api.getUsers(),
         api.getCities(),
       ]);
+      if (cancelled) return;
       if (userData) setUsers(userData);
       if (cityData) setCities(cityData);
     };
-    fetchData().catch(console.error);
+
+    void loadData().catch(console.error);
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const getCityName = (cityId: string | undefined) => {
-    if (!cityId) return "N/A";
+    if (!cityId) return "—";
     const city = cities.find((c) => c.id === cityId);
-    return city ? city.name : "N/A";
+    return city ? city.name : cityId;
   };
 
   const filteredUsers = users.filter((user) => {
@@ -49,12 +67,74 @@ export default function UsersPage() {
     return matchesSearch && matchesCity;
   });
 
+  const handleSaveUser = async (form: UserEditForm) => {
+    if (!editingUser) return;
+
+    setSaving(true);
+    const payload: Parameters<typeof api.updateUser>[1] = {
+      name: form.name.trim(),
+      surname: form.surname.trim(),
+      role: form.role,
+      cityId: form.cityId || "",
+    };
+    if (form.password.trim()) {
+      payload.password = form.password.trim();
+    }
+
+    const updated = await api.updateUser(editingUser.id, payload);
+    setSaving(false);
+
+    if (!updated) {
+      toast("error", "Impossible de mettre à jour l'utilisateur.");
+      return;
+    }
+
+    setUsers((prev) =>
+      prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)),
+    );
+    setEditingUser(null);
+    toast("success", "Compte mis à jour.");
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    const ok = await confirm({
+      title: "Supprimer ce compte ?",
+      message: (
+        <>
+          <span className="font-semibold text-slate-900">
+            {user.name} {user.surname}
+          </span>{" "}
+          ({user.email}) sera définitivement supprimé.
+        </>
+      ),
+      description:
+        "Cette action est irréversible. Les signalements liés ne seront pas supprimés automatiquement.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+
+    if (!ok) return;
+
+    const success = await api.deleteUser(user.id);
+    if (!success) {
+      toast("error", "Impossible de supprimer l'utilisateur.");
+      return;
+    }
+
+    setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    toast("success", "Compte supprimé.");
+  };
+
   return (
     <PageShell>
       <PageHeader
         title="Utilisateurs"
         description="Consultez et gérez les accès de tous les utilisateurs du réseau."
-        actions={<button type="button" className="btn-secondary">Exporter</button>}
+        actions={
+          <button type="button" className="btn-secondary">
+            Exporter
+          </button>
+        }
       />
 
       <div className="card-panel overflow-hidden">
@@ -87,7 +167,8 @@ export default function UsersPage() {
             </div>
           </div>
           <p className="text-xs font-medium text-slate-500">
-            {filteredUsers.length} résultat{filteredUsers.length !== 1 ? "s" : ""}
+            {filteredUsers.length} résultat
+            {filteredUsers.length !== 1 ? "s" : ""}
           </p>
         </div>
 
@@ -132,14 +213,12 @@ export default function UsersPage() {
                   <td>
                     <span
                       className={clsx(
-                        "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium capitalize",
-                        user.role === "agent"
-                          ? "bg-municipall-blue/10 text-municipall-blue"
-                          : "bg-slate-100 text-slate-600"
+                        "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium",
+                        roleBadgeClass(user.role),
                       )}
                     >
                       <UserCircle className="h-3 w-3" />
-                      {user.role}
+                      {roleLabel(user.role)}
                     </span>
                   </td>
                   <td>
@@ -153,13 +232,16 @@ export default function UsersPage() {
                       <Calendar className="h-3.5 w-3.5" />
                       {user.created_at
                         ? new Date(user.created_at).toLocaleDateString("fr-FR")
-                        : "N/A"}
+                        : "—"}
                     </span>
                   </td>
                   <td className="text-right">
-                    <button type="button" className="btn-ghost !p-2">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
+                    <UserActionsMenu
+                      user={user}
+                      onEdit={setEditingUser}
+                      onDelete={handleDeleteUser}
+                      onCopy={(message) => toast("info", message)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -174,6 +256,18 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {editingUser && (
+        <UserEditModal
+          key={editingUser.id}
+          user={editingUser}
+          cities={cities}
+          cityName={getCityName(editingUser.cityId)}
+          saving={saving}
+          onClose={() => setEditingUser(null)}
+          onSave={handleSaveUser}
+        />
+      )}
     </PageShell>
   );
 }

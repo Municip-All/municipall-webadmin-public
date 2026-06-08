@@ -3,8 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { ArrowRight, AlertCircle } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import { assertPlatformAdminKeyConfigured } from "@/lib/adminApi";
 
-export default function AccessCodeGuard({ children }: { children: React.ReactNode }) {
+export default function AccessCodeGuard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [isAuthorized, setIsAuthorized] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("admin_authorized") === "true";
@@ -21,6 +26,12 @@ export default function AccessCodeGuard({ children }: { children: React.ReactNod
     const timer = setTimeout(() => setIsLoading(false), 0);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      assertPlatformAdminKeyConfigured();
+    }
+  }, [isAuthorized]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

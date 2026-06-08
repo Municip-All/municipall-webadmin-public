@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       setToasts((prev) => [...prev, { id, type, message }]);
       setTimeout(() => removeToast(id), 5000);
     },
-    [removeToast]
+    [removeToast],
   );
 
   return (
@@ -43,9 +43,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             className={clsx(
               "flex min-w-[280px] items-center gap-3 rounded-xl border px-4 py-3 shadow-premium backdrop-blur-sm",
-              t.type === "success" && "border-emerald-200/80 bg-white text-emerald-800",
+              t.type === "success" &&
+                "border-emerald-200/80 bg-white text-emerald-800",
               t.type === "error" && "border-red-200/80 bg-white text-red-800",
-              t.type === "info" && "border-slate-200/80 bg-white text-slate-800"
+              t.type === "info" &&
+                "border-slate-200/80 bg-white text-slate-800",
             )}
           >
             {t.type === "success" && (
@@ -54,7 +56,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             {t.type === "error" && (
               <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
             )}
-            {t.type === "info" && <Info className="h-4 w-4 shrink-0 text-municipall-blue" />}
+            {t.type === "info" && (
+              <Info className="h-4 w-4 shrink-0 text-municipall-blue" />
+            )}
             <p className="flex-1 text-sm font-medium">{t.message}</p>
             <button
               type="button"

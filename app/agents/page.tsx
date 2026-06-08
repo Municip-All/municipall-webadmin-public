@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  UserPlus, 
-  ShieldCheck, 
-  Mail, 
-  Building2, 
+import {
+  UserPlus,
+  ShieldCheck,
+  Mail,
+  Building2,
   Key,
   CheckCircle2,
   X,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import clsx from "clsx";
 import { api, City, Invitation } from "@/lib/api";
@@ -25,7 +25,7 @@ export default function AgentsPage() {
     name: "",
     email: "",
     cityId: "",
-    permission: "standard"
+    permission: "standard",
   });
 
   useEffect(() => {
@@ -40,7 +40,12 @@ export default function AgentsPage() {
           const invs = await api.getCityInvitations(city.id);
           if (invs) allInvs.push(...invs);
         }
-        setInvitations(allInvs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setInvitations(
+          allInvs.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ),
+        );
       }
       setIsLoading(false);
     };
@@ -48,14 +53,18 @@ export default function AgentsPage() {
   }, []);
 
   const getCityName = (cityId: string) => {
-    return cities.find(c => c.id === cityId)?.name || "N/A";
+    return cities.find((c) => c.id === cityId)?.name || "N/A";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.cityId || !formData.email) return;
 
-    const result = await api.createInvitation(formData.cityId, formData.email);
+    const result = await api.createInvitation(formData.cityId, {
+      email: formData.email,
+      name: formData.name || undefined,
+      role: formData.permission === "admin" ? "assistant" : "agent",
+    });
     if (result) {
       setIsSuccess(true);
       setInvitations([result, ...invitations]);
@@ -88,7 +97,9 @@ export default function AgentsPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-municipall-blue/[0.08] text-municipall-blue">
                 <UserPlus className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-semibold text-slate-900">Nouvel agent</h3>
+              <h3 className="text-base font-semibold text-slate-900">
+                Nouvel agent
+              </h3>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -96,11 +107,13 @@ export default function AgentsPage() {
                 <div className="space-y-2">
                   <label className="section-title">Nom complet</label>
                   <div className="relative">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       placeholder="ex: Jean Dupont"
                       className="input-field"
                     />
@@ -110,11 +123,13 @@ export default function AgentsPage() {
                   <label className="section-title">Email institutionnel</label>
                   <div className="relative">
                     <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       placeholder="agent@ville.gouv.fr"
                       className="input-field pr-10"
                     />
@@ -126,15 +141,19 @@ export default function AgentsPage() {
                 <label className="section-title">Affectation (ville)</label>
                 <div className="relative">
                   <Building2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300 pointer-events-none" />
-                  <select 
+                  <select
                     required
                     value={formData.cityId}
-                    onChange={(e) => setFormData({...formData, cityId: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, cityId: e.target.value })
+                    }
                     className="input-field appearance-none pr-10"
                   >
                     <option value="">Sélectionner une ville...</option>
-                    {cities.map(city => (
-                      <option key={city.id} value={city.id}>{city.name}</option>
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -143,44 +162,71 @@ export default function AgentsPage() {
               <div className="space-y-4">
                 <label className="section-title">Niveau de permissions</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setFormData({...formData, permission: "standard"})}
+                    onClick={() =>
+                      setFormData({ ...formData, permission: "standard" })
+                    }
                     className={clsx(
                       "p-4 rounded-xl border text-left transition-all",
-                      formData.permission === "standard" 
-                        ? "border-municipall-blue bg-municipall-blue/[0.06] ring-1 ring-municipall-blue/30" 
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                      formData.permission === "standard"
+                        ? "border-municipall-blue bg-municipall-blue/[0.06] ring-1 ring-municipall-blue/30"
+                        : "border-slate-200 bg-white hover:border-slate-300",
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <ShieldCheck className={clsx("w-4 h-4", formData.permission === "standard" ? "text-municipall-blue" : "text-gray-400")} />
+                      <ShieldCheck
+                        className={clsx(
+                          "w-4 h-4",
+                          formData.permission === "standard"
+                            ? "text-municipall-blue"
+                            : "text-gray-400",
+                        )}
+                      />
                       <span className="text-sm font-bold">Standard</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 leading-tight">Accès à la modération et aux signalements de sa ville uniquement.</p>
+                    <p className="text-[10px] text-gray-500 leading-tight">
+                      Accès à la modération et aux signalements de sa ville
+                      uniquement.
+                    </p>
                   </button>
 
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setFormData({...formData, permission: "admin"})}
+                    onClick={() =>
+                      setFormData({ ...formData, permission: "admin" })
+                    }
                     className={clsx(
                       "p-4 rounded-xl border text-left transition-all",
-                      formData.permission === "admin" 
-                        ? "border-municipall-blue bg-municipall-blue/[0.06] ring-1 ring-municipall-blue/30" 
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                      formData.permission === "admin"
+                        ? "border-municipall-blue bg-municipall-blue/[0.06] ring-1 ring-municipall-blue/30"
+                        : "border-slate-200 bg-white hover:border-slate-300",
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <Key className={clsx("w-4 h-4", formData.permission === "admin" ? "text-municipall-blue" : "text-gray-400")} />
+                      <Key
+                        className={clsx(
+                          "w-4 h-4",
+                          formData.permission === "admin"
+                            ? "text-municipall-blue"
+                            : "text-gray-400",
+                        )}
+                      />
                       <span className="text-sm font-bold">Administrateur</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 leading-tight">Peut gérer les autres agents et les paramètres de la ville.</p>
+                    <p className="text-[10px] text-gray-500 leading-tight">
+                      Peut gérer les autres agents et les paramètres de la
+                      ville.
+                    </p>
                   </button>
                 </div>
               </div>
 
               <div className="pt-4">
-                <button type="submit" className="w-full btn-primary py-4 justify-center">
+                <button
+                  type="submit"
+                  className="w-full btn-primary py-4 justify-center"
+                >
                   <UserPlus className="w-5 h-5" />
                   Créer le compte agent
                 </button>
@@ -190,8 +236,12 @@ export default function AgentsPage() {
                 <div className="bg-green-50 border border-green-100 p-4 rounded-xl flex items-center gap-3 text-green-700 animate-in fade-in slide-in-from-bottom-2">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                   <div>
-                    <p className="text-sm font-bold">Compte créé avec succès !</p>
-                    <p className="text-xs opacity-80">Un email d&apos;activation a été envoyé à l&apos;agent.</p>
+                    <p className="text-sm font-bold">
+                      Compte créé avec succès !
+                    </p>
+                    <p className="text-xs opacity-80">
+                      Un email d&apos;activation a été envoyé à l&apos;agent.
+                    </p>
                   </div>
                 </div>
               )}
@@ -205,16 +255,31 @@ export default function AgentsPage() {
               <h3 className="text-lg font-bold mb-4">Conseils de Sécurité</h3>
               <ul className="space-y-4">
                 <li className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">1</div>
-                  <p className="text-xs text-white/80 leading-relaxed">Utilisez toujours l&apos;adresse email <strong>institutionnelle</strong> de l&apos;agent.</p>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
+                    1
+                  </div>
+                  <p className="text-xs text-white/80 leading-relaxed">
+                    Utilisez toujours l&apos;adresse email{" "}
+                    <strong>institutionnelle</strong> de l&apos;agent.
+                  </p>
                 </li>
                 <li className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">2</div>
-                  <p className="text-xs text-white/80 leading-relaxed">Vérifiez l&apos;identité de l&apos;agent avant de lui accorder des droits <strong>Administrateur</strong>.</p>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
+                    2
+                  </div>
+                  <p className="text-xs text-white/80 leading-relaxed">
+                    Vérifiez l&apos;identité de l&apos;agent avant de lui
+                    accorder des droits <strong>Administrateur</strong>.
+                  </p>
                 </li>
                 <li className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">3</div>
-                  <p className="text-xs text-white/80 leading-relaxed">Les accès peuvent être révoqués à tout moment depuis la liste des utilisateurs.</p>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
+                    3
+                  </div>
+                  <p className="text-xs text-white/80 leading-relaxed">
+                    Les accès peuvent être révoqués à tout moment depuis la
+                    liste des utilisateurs.
+                  </p>
                 </li>
               </ul>
             </div>
@@ -222,7 +287,9 @@ export default function AgentsPage() {
           </div>
 
           <div className="card-panel p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-6">Invitations en attente</h3>
+            <h3 className="text-base font-bold text-gray-900 mb-6">
+              Invitations en attente
+            </h3>
             <div className="space-y-4">
               {isLoading ? (
                 <div className="flex justify-center py-4">
@@ -230,10 +297,17 @@ export default function AgentsPage() {
                 </div>
               ) : invitations.length > 0 ? (
                 invitations.map((inv, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+                  >
                     <div>
-                      <p className="text-sm font-bold text-gray-900">{inv.email}</p>
-                      <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{getCityName(inv.cityId)} • {formatTime(inv.createdAt)}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {inv.email}
+                      </p>
+                      <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+                        {getCityName(inv.cityId)} • {formatTime(inv.createdAt)}
+                      </p>
                     </div>
                     <button className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
                       <X className="w-4 h-4" />
@@ -241,7 +315,9 @@ export default function AgentsPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-gray-400 font-medium text-center py-4">Aucune invitation en attente.</p>
+                <p className="text-xs text-gray-400 font-medium text-center py-4">
+                  Aucune invitation en attente.
+                </p>
               )}
             </div>
           </div>

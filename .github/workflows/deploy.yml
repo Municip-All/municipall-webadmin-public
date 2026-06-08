@@ -2,7 +2,7 @@ name: Deploy WebAdmin
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   validate-build:
@@ -12,11 +12,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
       - name: Build
+        env:
+          NEXT_PUBLIC_PLATFORM_ADMIN_KEY: ${{ secrets.PLATFORM_ADMIN_KEY }}
         run: npm run build
 
   build-and-push:
@@ -41,6 +43,8 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ env.OWNER_LC }}/municipall-webadmin:latest
+          build-args: |
+            NEXT_PUBLIC_PLATFORM_ADMIN_KEY=${{ secrets.PLATFORM_ADMIN_KEY }}
 
   deploy:
     needs: build-and-push

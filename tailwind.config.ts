@@ -19,7 +19,8 @@ const config: Config = {
         sans: ["Inter", "sans-serif"],
       },
       boxShadow: {
-        premium: "0 10px 30px -5px rgba(11, 0, 128, 0.05), 0 4px 15px -5px rgba(11, 0, 128, 0.03)",
+        premium:
+          "0 10px 30px -5px rgba(11, 0, 128, 0.05), 0 4px 15px -5px rgba(11, 0, 128, 0.03)",
         glass: "0 8px 32px 0 rgba(11, 0, 128, 0.08)",
       },
     },

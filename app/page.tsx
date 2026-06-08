@@ -19,7 +19,12 @@ import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import Badge from "@/components/Badge";
 import SystemMetricCard from "@/components/SystemMetricCard";
-import { api, MonitoringStats, Activity as ActivityLog, CityStats } from "@/lib/api";
+import {
+  api,
+  MonitoringStats,
+  Activity as ActivityLog,
+  CityStats,
+} from "@/lib/api";
 
 export default function Dashboard() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
@@ -40,7 +45,9 @@ export default function Dashboard() {
       if (statsData) setStats(statsData);
       if (activityData) setActivities(activityData);
       if (cityStatsData)
-        setCityStats(cityStatsData.sort((a, b) => b.users - a.users).slice(0, 3));
+        setCityStats(
+          cityStatsData.sort((a, b) => b.users - a.users).slice(0, 3),
+        );
       setLastUpdated(new Date());
     } finally {
       setIsLoading(false);
@@ -82,7 +89,9 @@ export default function Dashboard() {
             Données en temps réel du réseau Municip&apos;All
             <span className="text-slate-300">·</span>
             <span className="inline-flex items-center gap-1.5 text-slate-500">
-              <RefreshCcw className={clsx("h-3.5 w-3.5", isLoading && "animate-spin")} />
+              <RefreshCcw
+                className={clsx("h-3.5 w-3.5", isLoading && "animate-spin")}
+              />
               {lastUpdated.toLocaleTimeString("fr-FR")}
             </span>
           </span>
@@ -103,7 +112,9 @@ export default function Dashboard() {
               className="btn-secondary !px-3"
               aria-label="Actualiser"
             >
-              <RefreshCcw className={clsx("h-4 w-4", isLoading && "animate-spin")} />
+              <RefreshCcw
+                className={clsx("h-4 w-4", isLoading && "animate-spin")}
+              />
             </button>
           </>
         }
@@ -166,7 +177,9 @@ export default function Dashboard() {
             value={
               <>
                 {stats ? Math.floor(stats.system.uptime / 3600) : 0}
-                <span className="ml-1 text-sm font-medium text-slate-500">h</span>
+                <span className="ml-1 text-sm font-medium text-slate-500">
+                  h
+                </span>
               </>
             }
             icon={HardDrive}
@@ -195,7 +208,10 @@ export default function Dashboard() {
             </div>
             <div className="flex h-52 items-end justify-between gap-2">
               {[65, 45, 75, 55, 90, 65, 80].map((h, i) => (
-                <div key={i} className="group flex flex-1 flex-col items-center gap-2">
+                <div
+                  key={i}
+                  className="group flex flex-1 flex-col items-center gap-2"
+                >
                   <div
                     className="w-full rounded-lg bg-municipall-blue/[0.08] transition-colors group-hover:bg-municipall-blue/20"
                     style={{ height: `${h}%` }}
@@ -282,7 +298,7 @@ export default function Dashboard() {
                             ? "bg-emerald-500"
                             : activity.type === "agent"
                               ? "bg-municipall-indigo"
-                              : "bg-red-500"
+                              : "bg-red-500",
                       )}
                     />
                     <div className="min-w-0">
@@ -301,7 +317,10 @@ export default function Dashboard() {
                 </p>
               )}
             </div>
-            <button type="button" className="btn-ghost mt-5 w-full text-municipall-blue">
+            <button
+              type="button"
+              className="btn-ghost mt-5 w-full text-municipall-blue"
+            >
               Voir tout l&apos;historique
             </button>
           </div>

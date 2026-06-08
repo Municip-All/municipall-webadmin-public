@@ -37,7 +37,9 @@ export default function DatabasePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [sqlQuery, setSqlQuery] = useState("SELECT * FROM user LIMIT 10;");
-  const [sqlResult, setSqlResult] = useState<Record<string, unknown>[] | null>(null);
+  const [sqlResult, setSqlResult] = useState<Record<string, unknown>[] | null>(
+    null,
+  );
   const [sqlError, setSqlError] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -87,7 +89,7 @@ export default function DatabasePage() {
       setSqlResult(
         Array.isArray(result)
           ? (result as Record<string, unknown>[])
-          : [result as Record<string, unknown>]
+          : [result as Record<string, unknown>],
       );
     }
     setIsExecuting(false);
@@ -106,7 +108,7 @@ export default function DatabasePage() {
   }, [activeTab, handleExecuteSql]);
 
   const filteredTables = tables.filter((t) =>
-    t.toLowerCase().includes(tableFilter.toLowerCase())
+    t.toLowerCase().includes(tableFilter.toLowerCase()),
   );
 
   const refreshTable = () => {
@@ -167,13 +169,15 @@ export default function DatabasePage() {
                     "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all",
                     selectedTable === table
                       ? "bg-municipall-blue font-medium text-white"
-                      : "font-medium text-slate-600 hover:bg-slate-50"
+                      : "font-medium text-slate-600 hover:bg-slate-50",
                   )}
                 >
                   <Table2
                     className={clsx(
                       "h-3.5 w-3.5 shrink-0",
-                      selectedTable === table ? "text-white/80" : "text-slate-400"
+                      selectedTable === table
+                        ? "text-white/80"
+                        : "text-slate-400",
                     )}
                   />
                   <span className="truncate">{table}</span>
@@ -191,7 +195,7 @@ export default function DatabasePage() {
               onClick={() => setActiveTab("grid")}
               className={clsx(
                 "tab-pill",
-                activeTab === "grid" ? "tab-pill-active" : "tab-pill-inactive"
+                activeTab === "grid" ? "tab-pill-active" : "tab-pill-inactive",
               )}
             >
               <Database className="h-4 w-4" />
@@ -202,7 +206,7 @@ export default function DatabasePage() {
               onClick={() => setActiveTab("sql")}
               className={clsx(
                 "tab-pill",
-                activeTab === "sql" ? "tab-pill-active" : "tab-pill-inactive"
+                activeTab === "sql" ? "tab-pill-active" : "tab-pill-inactive",
               )}
             >
               <TerminalSquare className="h-4 w-4" />
@@ -265,7 +269,9 @@ export default function DatabasePage() {
                                 {row[col.name] !== null ? (
                                   String(row[col.name])
                                 ) : (
-                                  <span className="italic text-slate-300">null</span>
+                                  <span className="italic text-slate-300">
+                                    null
+                                  </span>
                                 )}
                               </td>
                             ))}
@@ -331,32 +337,40 @@ export default function DatabasePage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
                           <CheckCircle2 className="h-4 w-4" />
-                          {sqlResult.length} ligne{sqlResult.length > 1 ? "s" : ""}
+                          {sqlResult.length} ligne
+                          {sqlResult.length > 1 ? "s" : ""}
                         </div>
                         {sqlResult.length > 0 && (
                           <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
                             <table className="data-table font-mono text-xs whitespace-nowrap">
                               <thead>
                                 <tr>
-                                  {Object.keys(sqlResult[0] || {}).map((key, i) => (
-                                    <th key={i}>{key}</th>
-                                  ))}
+                                  {Object.keys(sqlResult[0] || {}).map(
+                                    (key, i) => (
+                                      <th key={i}>{key}</th>
+                                    ),
+                                  )}
                                 </tr>
                               </thead>
                               <tbody>
                                 {sqlResult.map((row, i) => (
                                   <tr key={i}>
-                                    {Object.values(row).map((val: unknown, j) => (
-                                      <td key={j} className="max-w-[280px] truncate">
-                                        {val !== null ? (
-                                          String(val)
-                                        ) : (
-                                          <span className="italic text-slate-300">
-                                            null
-                                          </span>
-                                        )}
-                                      </td>
-                                    ))}
+                                    {Object.values(row).map(
+                                      (val: unknown, j) => (
+                                        <td
+                                          key={j}
+                                          className="max-w-[280px] truncate"
+                                        >
+                                          {val !== null ? (
+                                            String(val)
+                                          ) : (
+                                            <span className="italic text-slate-300">
+                                              null
+                                            </span>
+                                          )}
+                                        </td>
+                                      ),
+                                    )}
                                   </tr>
                                 ))}
                               </tbody>

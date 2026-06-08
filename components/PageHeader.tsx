@@ -22,7 +22,7 @@ export default function PageHeader({
     <header
       className={clsx(
         "mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between",
-        className
+        className,
       )}
     >
       <div className="min-w-0 space-y-2">

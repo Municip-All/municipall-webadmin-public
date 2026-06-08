@@ -26,7 +26,7 @@ export default function BrandLogo({
       <div
         className={clsx(
           s.box,
-          "relative shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/80 shadow-sm"
+          "relative shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/80 shadow-sm",
         )}
       >
         <Image
