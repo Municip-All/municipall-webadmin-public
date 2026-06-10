@@ -207,6 +207,10 @@ export default function CitiesPage() {
     if (!selectedCity) return;
     const updated = await api.updateCity(selectedCity.id, {
       features: selectedCity.features,
+      isTransportFeatureAllowed: !!selectedCity.isTransportFeatureAllowed,
+      isTransportFeatureEnabled: selectedCity.isTransportFeatureAllowed
+        ? !!selectedCity.isTransportFeatureEnabled
+        : false,
       dataRetentionPolicy:
         selectedCity.dataRetentionPolicy?.trim() || undefined,
     });
@@ -629,13 +633,37 @@ export default function CitiesPage() {
                 <p className="text-sm font-bold text-gray-900 mb-3">
                   Modules activés
                 </p>
+                <label className="flex items-center justify-between p-4 rounded-xl border-2 border-indigo-100 bg-indigo-50/50 hover:bg-indigo-50 cursor-pointer transition-colors mb-4">
+                  <div>
+                    <span className="text-sm font-bold text-gray-900 block">
+                      Transports en commun (IDFM)
+                    </span>
+                    <span className="text-xs text-gray-500 mt-1 block">
+                      Autorise la mairie à activer le module temps réel dans l&apos;app
+                      citoyenne (contrat plateforme).
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!!selectedCity.isTransportFeatureAllowed}
+                    onChange={(e) =>
+                      setSelectedCity({
+                        ...selectedCity,
+                        isTransportFeatureAllowed: e.target.checked,
+                        isTransportFeatureEnabled: e.target.checked
+                          ? selectedCity.isTransportFeatureEnabled
+                          : false,
+                      })
+                    }
+                    className="w-5 h-5 rounded border-gray-300 text-municipall-blue focus:ring-municipall-blue"
+                  />
+                </label>
                 {[
                   "flux-live",
                   "agenda",
                   "reports",
                   "weather",
                   "security",
-                  "transport",
                 ].map((feature) => (
                   <label
                     key={feature}

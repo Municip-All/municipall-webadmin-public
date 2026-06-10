@@ -84,6 +84,8 @@ export interface City {
   useGradient: boolean;
   logoUrl: string;
   features: string[];
+  isTransportFeatureAllowed?: boolean;
+  isTransportFeatureEnabled?: boolean;
   boundary?: unknown;
   dataRetentionPolicy?: string;
 }
