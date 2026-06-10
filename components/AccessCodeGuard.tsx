@@ -1,9 +1,32 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import {
+  ArrowRight,
+  AlertCircle,
+  Crown,
+  Headphones,
+  TrendingUp,
+  Wrench,
+} from "lucide-react";
+import clsx from "clsx";
 import BrandLogo from "@/components/BrandLogo";
 import { assertPlatformAdminKeyConfigured } from "@/lib/adminApi";
+import {
+  getStoredPanelRole,
+  setStoredPanelRole,
+  PANEL_ROLES,
+  type PanelRole,
+} from "@/lib/platformRoles";
+
+const VALID_CODE = "MUNICIPALL2026";
+
+const ROLE_ICONS: Record<PanelRole, React.ElementType> = {
+  chief: Crown,
+  tech: Wrench,
+  sales: TrendingUp,
+  support: Headphones,
+};
 
 export default function AccessCodeGuard({
   children,
@@ -16,11 +39,15 @@ export default function AccessCodeGuard({
     }
     return false;
   });
+  const [hasRole, setHasRole] = useState(() => {
+    if (typeof window !== "undefined") {
+      return getStoredPanelRole() !== null;
+    }
+    return false;
+  });
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  const VALID_CODE = "MUNICIPALL2026";
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 0);
@@ -43,6 +70,11 @@ export default function AccessCodeGuard({
       setError(true);
       setTimeout(() => setError(false), 2000);
     }
+  };
+
+  const handleRoleSelect = (role: PanelRole) => {
+    setStoredPanelRole(role);
+    setHasRole(true);
   };
 
   if (isLoading) return null;
@@ -99,7 +131,7 @@ export default function AccessCodeGuard({
               )}
 
               <button type="submit" className="btn-primary w-full py-3">
-                Accéder au panel
+                Continuer
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
@@ -109,6 +141,59 @@ export default function AccessCodeGuard({
             En accédant à cet espace, vous acceptez la charte de confidentialité
             Municip&apos;All.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasRole) {
+    return (
+      <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[var(--background)] p-6">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(11, 0, 128, 0.08), transparent)",
+          }}
+        />
+
+        <div className="relative z-10 w-full max-w-2xl">
+          <div className="mb-8 text-center">
+            <BrandLogo size="lg" className="mb-5 justify-center" />
+            <h1 className="text-2xl font-semibold text-slate-900">
+              Choisissez votre profil
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Chaque équipe dispose d&apos;un accès adapté à ses missions
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {PANEL_ROLES.map((role) => {
+              const Icon = ROLE_ICONS[role.id];
+              return (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => handleRoleSelect(role.id)}
+                  className={clsx(
+                    "card-panel group flex flex-col items-start gap-3 p-5 text-left transition-all",
+                    "hover:border-municipall-blue/30 hover:shadow-md",
+                  )}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-municipall-blue/[0.08] text-municipall-blue transition-colors group-hover:bg-municipall-blue/[0.12]">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900">{role.label}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                      {role.description}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     );

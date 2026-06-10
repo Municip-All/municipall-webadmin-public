@@ -15,6 +15,8 @@ import clsx from "clsx";
 import { api, City, Invitation } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
+import RequirePermission from "@/components/RequirePermission";
+import { PanelPermission } from "@/lib/panelPermissions";
 
 export default function AgentsPage() {
   const [cities, setCities] = useState<City[]>([]);
@@ -84,6 +86,7 @@ export default function AgentsPage() {
   };
 
   return (
+    <RequirePermission permission={PanelPermission.AGENTS}>
     <PageShell className="max-w-5xl">
       <PageHeader
         title="Agents"
@@ -324,5 +327,6 @@ export default function AgentsPage() {
         </div>
       </div>
     </PageShell>
+    </RequirePermission>
   );
 }

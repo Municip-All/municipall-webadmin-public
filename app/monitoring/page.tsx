@@ -7,6 +7,8 @@ import { api, DockerContainer } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import Badge from "@/components/Badge";
+import RequirePermission from "@/components/RequirePermission";
+import { PanelPermission } from "@/lib/panelPermissions";
 
 export default function MonitoringPage() {
   const [containers, setContainers] = useState<DockerContainer[]>([]);
@@ -42,6 +44,7 @@ export default function MonitoringPage() {
   }, []);
 
   return (
+    <RequirePermission permission={PanelPermission.MONITORING}>
     <PageShell>
       <PageHeader
         title="État du serveur"
@@ -156,5 +159,6 @@ export default function MonitoringPage() {
         </div>
       )}
     </PageShell>
+    </RequirePermission>
   );
 }

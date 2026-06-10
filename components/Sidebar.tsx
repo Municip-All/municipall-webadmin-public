@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Database,
   Server,
+  ChevronDown,
+  Crown,
 } from "lucide-react";
 import clsx from "clsx";
 import BrandLogo from "@/components/BrandLogo";
@@ -25,10 +27,25 @@ import {
   setStoredAdminEnvironment,
 } from "@/lib/environment";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
+import { usePanelRole } from "@/context/PanelRoleContext";
+import {
+  NAV_PERMISSIONS,
+  PanelPermission,
+  type NavItemId,
+} from "@/lib/panelPermissions";
+import {
+  clearStoredPanelRole,
+  panelRoleLabel,
+  PANEL_ROLES,
+  type PanelRole,
+} from "@/lib/platformRoles";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { confirm } = useConfirmDialog();
+  const { role, setRole, can } = usePanelRole();
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [env] = useState<AdminEnvironment>(() =>
     typeof window !== "undefined"
       ? getStoredAdminEnvironment()
@@ -60,7 +77,12 @@ export default function Sidebar() {
     window.location.reload();
   };
 
-  const menuItems = [
+  const menuItems: {
+    id: NavItemId;
+    label: string;
+    icon: React.ElementType;
+    href: string;
+  }[] = [
     {
       id: "dashboard",
       label: "Vue d'ensemble",
@@ -89,9 +111,22 @@ export default function Sidebar() {
     },
   ];
 
+  const visibleMenuItems = menuItems.filter((item) =>
+    can(NAV_PERMISSIONS[item.id]),
+  );
+
   const handleLogout = () => {
     localStorage.removeItem("admin_authorized");
+    clearStoredPanelRole();
     window.location.reload();
+  };
+
+  const handleRoleSwitch = (nextRole: PanelRole) => {
+    setRole(nextRole);
+    setRoleMenuOpen(false);
+    if (pathname !== "/") {
+      router.push("/");
+    }
   };
 
   const envColors: Record<AdminEnvironment, string> = {
@@ -122,8 +157,63 @@ export default function Sidebar() {
           </div>
         </Link>
 
+        {role && (
+          <div className="relative mb-4">
+            <button
+              type="button"
+              onClick={() => role === "chief" && setRoleMenuOpen((v) => !v)}
+              className={clsx(
+                "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs",
+                role === "chief"
+                  ? "border-municipall-blue/20 bg-municipall-blue/[0.04] hover:bg-municipall-blue/[0.07]"
+                  : "border-slate-200 bg-slate-50",
+              )}
+            >
+              {role === "chief" ? (
+                <Crown className="h-4 w-4 shrink-0 text-amber-600" />
+              ) : (
+                <ShieldCheck className="h-4 w-4 shrink-0 text-slate-400" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-slate-800">{panelRoleLabel(role)}</p>
+                <p className="truncate text-[10px] text-slate-500">
+                  {role === "chief"
+                    ? "Vue globale — cliquer pour changer"
+                    : "Profil actif"}
+                </p>
+              </div>
+              {role === "chief" && (
+                <ChevronDown
+                  className={clsx(
+                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                    roleMenuOpen && "rotate-180",
+                  )}
+                />
+              )}
+            </button>
+
+            {role === "chief" && roleMenuOpen && (
+              <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                {PANEL_ROLES.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleRoleSwitch(r.id)}
+                    className={clsx(
+                      "flex w-full px-3 py-2 text-left text-xs hover:bg-slate-50",
+                      r.id === role && "font-bold text-municipall-blue",
+                    )}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <nav className="space-y-0.5" aria-label="Navigation principale">
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
 
@@ -156,34 +246,36 @@ export default function Sidebar() {
       </div>
 
       <div className="mt-auto space-y-3 border-t border-slate-100 p-5">
-        <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5">
-          <div className="mb-2.5 flex items-center gap-2">
-            <Server className="h-3.5 w-3.5 text-slate-400" />
-            <span className="section-title">Environnement</span>
+        {can(PanelPermission.ENV_SWITCH) && (
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5">
+            <div className="mb-2.5 flex items-center gap-2">
+              <Server className="h-3.5 w-3.5 text-slate-400" />
+              <span className="section-title">Environnement</span>
+            </div>
+            {env === "PROD" && (
+              <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] font-medium leading-snug text-red-700">
+                Production active — les actions modifient les données réelles.
+              </p>
+            )}
+            <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200/80">
+              {ADMIN_ENVIRONMENTS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => setEnvironment(e)}
+                  className={clsx(
+                    "flex-1 rounded-md py-1.5 text-[10px] font-bold tracking-wide transition-all",
+                    env === e
+                      ? clsx(envColors[e], "text-white shadow-sm")
+                      : "text-slate-400 hover:text-slate-600",
+                  )}
+                >
+                  {envLabels[e]}
+                </button>
+              ))}
+            </div>
           </div>
-          {env === "PROD" && (
-            <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] font-medium leading-snug text-red-700">
-              Production active — les actions modifient les données réelles.
-            </p>
-          )}
-          <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200/80">
-            {ADMIN_ENVIRONMENTS.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => setEnvironment(e)}
-                className={clsx(
-                  "flex-1 rounded-md py-1.5 text-[10px] font-bold tracking-wide transition-all",
-                  env === e
-                    ? clsx(envColors[e], "text-white shadow-sm")
-                    : "text-slate-400 hover:text-slate-600",
-                )}
-              >
-                {envLabels[e]}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
 
         <div className="space-y-0.5">
           <button

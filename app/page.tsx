@@ -25,8 +25,21 @@ import {
   Activity as ActivityLog,
   CityStats,
 } from "@/lib/api";
+import { usePanelRole } from "@/context/PanelRoleContext";
+import { PanelPermission } from "@/lib/panelPermissions";
+import { panelRoleLabel, type PanelRole } from "@/lib/platformRoles";
+import Link from "next/link";
+
+const ROLE_FOCUS: Record<PanelRole, string> = {
+  chief: "Vue globale — pilotage du réseau Municip'All",
+  tech: "Infrastructure, comptes et maintenance technique",
+  sales: "Croissance commerciale et villes partenaires",
+  support: "Assistance citoyens, agents et comptes",
+};
 
 export default function Dashboard() {
+  const { role, can } = usePanelRole();
+  const showInfra = can(PanelPermission.DASHBOARD_INFRA);
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,13 +93,39 @@ export default function Dashboard() {
     };
   }, []);
 
+  const citizens = stats?.business.citizens ?? 0;
+  const agents = stats?.business.agents ?? 0;
+  const userTotal = citizens + agents;
+  const distribution = userTotal
+    ? [
+        {
+          label: "Citoyens",
+          pct: Math.round((citizens / userTotal) * 100),
+          color: "bg-municipall-blue",
+        },
+        {
+          label: "Agents & élus",
+          pct: Math.round((agents / userTotal) * 100),
+          color: "bg-municipall-indigo",
+        },
+      ]
+    : [];
+
   return (
     <PageShell>
       <PageHeader
         title="Vue d'ensemble"
         description={
           <span className="flex flex-wrap items-center gap-2">
-            Données en temps réel du réseau Municip&apos;All
+            {role ? ROLE_FOCUS[role] : "Données en temps réel du réseau Municip'All"}
+            {role && (
+              <>
+                <span className="text-slate-300">·</span>
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                  {panelRoleLabel(role)}
+                </span>
+              </>
+            )}
             <span className="text-slate-300">·</span>
             <span className="inline-flex items-center gap-1.5 text-slate-500">
               <RefreshCcw
@@ -150,49 +189,131 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="mb-10">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h2 className="section-title">Infrastructure VPS</h2>
-          <Badge variant="live" dot>
-            Live
-          </Badge>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SystemMetricCard
-            label="Charge CPU"
-            value={`${stats?.system.cpu.load ?? 0}%`}
-            icon={Cpu}
-            progress={stats?.system.cpu.load ?? 0}
-            accent="brand"
-          />
-          <SystemMetricCard
-            label="Mémoire"
-            value={`${stats?.system.memory.used ?? 0} / ${stats?.system.memory.total ?? 0} Go`}
-            icon={Activity}
-            progress={stats?.system.memory.percentage ?? 0}
-            accent="emerald"
-          />
-          <SystemMetricCard
-            label="Uptime"
-            value={
-              <>
-                {stats ? Math.floor(stats.system.uptime / 3600) : 0}
-                <span className="ml-1 text-sm font-medium text-slate-500">
-                  h
-                </span>
-              </>
-            }
-            icon={HardDrive}
-            accent="sky"
-          />
-          <SystemMetricCard
-            label="Plateforme"
-            value={(stats?.system.platform ?? "—").toString()}
-            icon={Zap}
-            accent="amber"
-          />
-        </div>
-      </section>
+      {showInfra && (
+        <section className="mb-10">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <h2 className="section-title">Infrastructure VPS</h2>
+            <Badge variant="live" dot>
+              Live
+            </Badge>
+            {can(PanelPermission.MONITORING) && (
+              <Link
+                href="/monitoring"
+                className="text-xs font-semibold text-municipall-blue hover:underline"
+              >
+                Voir le détail →
+              </Link>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <SystemMetricCard
+              label="Charge CPU"
+              value={`${stats?.system.cpu.load ?? 0}%`}
+              icon={Cpu}
+              progress={stats?.system.cpu.load ?? 0}
+              accent="brand"
+            />
+            <SystemMetricCard
+              label="Mémoire"
+              value={`${stats?.system.memory.used ?? 0} / ${stats?.system.memory.total ?? 0} Go`}
+              icon={Activity}
+              progress={stats?.system.memory.percentage ?? 0}
+              accent="emerald"
+            />
+            <SystemMetricCard
+              label="Uptime"
+              value={
+                <>
+                  {stats ? Math.floor(stats.system.uptime / 3600) : 0}
+                  <span className="ml-1 text-sm font-medium text-slate-500">
+                    h
+                  </span>
+                </>
+              }
+              icon={HardDrive}
+              accent="sky"
+            />
+            <SystemMetricCard
+              label="Plateforme"
+              value={(stats?.system.platform ?? "—").toString()}
+              icon={Zap}
+              accent="amber"
+            />
+          </div>
+        </section>
+      )}
+
+      {!showInfra && role === "sales" && (
+        <section className="mb-10">
+          <h2 className="section-title mb-4">Accès rapides Sales</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Link
+              href="/cities"
+              className="card-panel flex items-center gap-4 p-5 transition-shadow hover:shadow-md"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-municipall-blue/[0.08] text-municipall-blue">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">Villes partenaires</p>
+                <p className="text-xs text-slate-500">
+                  Contrats, options et déploiement
+                </p>
+              </div>
+            </Link>
+            <Link
+              href="/users"
+              className="card-panel flex items-center gap-4 p-5 transition-shadow hover:shadow-md"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">Comptes utilisateurs</p>
+                <p className="text-xs text-slate-500">
+                  Consultation des inscriptions
+                </p>
+              </div>
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {!showInfra && role === "support" && (
+        <section className="mb-10">
+          <h2 className="section-title mb-4">Accès rapides Support</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Link
+              href="/users"
+              className="card-panel flex items-center gap-4 p-5 transition-shadow hover:shadow-md"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-municipall-blue/[0.08] text-municipall-blue">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">Gérer les comptes</p>
+                <p className="text-xs text-slate-500">
+                  Modifier rôles, communes, mots de passe
+                </p>
+              </div>
+            </Link>
+            <Link
+              href="/agents"
+              className="card-panel flex items-center gap-4 p-5 transition-shadow hover:shadow-md"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <UserCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">Invitations agents</p>
+                <p className="text-xs text-slate-500">
+                  Onboarding des équipes mairie
+                </p>
+              </div>
+            </Link>
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -257,24 +378,26 @@ export default function Dashboard() {
                 Répartition utilisateurs
               </h3>
               <div className="space-y-4">
-                {[
-                  { label: "Citoyens", pct: 92, color: "bg-municipall-blue" },
-                  { label: "Agents", pct: 7, color: "bg-municipall-indigo" },
-                  { label: "Super admins", pct: 1, color: "bg-slate-700" },
-                ].map((row) => (
-                  <div key={row.label} className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-medium text-slate-500">
-                      <span>{row.label}</span>
-                      <span>{row.pct}%</span>
+                {distribution.length > 0 ? (
+                  distribution.map((row) => (
+                    <div key={row.label} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-medium text-slate-500">
+                        <span>{row.label}</span>
+                        <span>{row.pct}%</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={clsx("h-full rounded-full", row.color)}
+                          style={{ width: `${row.pct}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className={clsx("h-full rounded-full", row.color)}
-                        style={{ width: `${row.pct}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="py-6 text-center text-sm text-slate-400">
+                    Aucune donnée disponible
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -16,6 +16,8 @@ import { api } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import Badge from "@/components/Badge";
+import RequirePermission from "@/components/RequirePermission";
+import { PanelPermission } from "@/lib/panelPermissions";
 
 interface ColumnInfo {
   name: string;
@@ -121,6 +123,7 @@ export default function DatabasePage() {
   };
 
   return (
+    <RequirePermission permission={PanelPermission.DATABASE}>
     <PageShell fullHeight className="h-full">
       <PageHeader
         title="Base de données"
@@ -391,5 +394,6 @@ export default function DatabasePage() {
         </div>
       </div>
     </PageShell>
+    </RequirePermission>
   );
 }

@@ -41,10 +41,16 @@ import { useToast } from "@/context/ToastContext";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
+import RequirePermission from "@/components/RequirePermission";
+import { usePanelRole } from "@/context/PanelRoleContext";
+import { PanelPermission } from "@/lib/panelPermissions";
 
 export default function CitiesPage() {
   const { toast } = useToast();
   const { confirm } = useConfirmDialog();
+  const { can } = usePanelRole();
+  const canEditCities = can(PanelPermission.CITIES_EDIT);
+  const canManageAgents = can(PanelPermission.AGENTS);
   const [cities, setCities] = useState<City[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -295,19 +301,26 @@ export default function CitiesPage() {
   };
 
   return (
+    <RequirePermission permission={PanelPermission.CITIES_VIEW}>
     <PageShell>
       <PageHeader
         title="Villes partenaires"
-        description="Gérez vos contrats et visualisez les territoires couverts."
+        description={
+          canEditCities
+            ? "Gérez vos contrats et visualisez les territoires couverts."
+            : "Consultation des villes partenaires et de leur couverture."
+        }
         actions={
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="btn-primary"
-          >
-            <Plus className="h-4 w-4" />
-            Ajouter une ville
-          </button>
+          canEditCities ? (
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(true)}
+              className="btn-primary"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une ville
+            </button>
+          ) : undefined
         }
       />
 
@@ -425,27 +438,33 @@ export default function CitiesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => handleOpenAgents(city)}
-                    className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Gérer les agents"
-                  >
-                    <Users className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleOpenSettings(city)}
-                    className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Réglages"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCity(city.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canManageAgents && (
+                    <button
+                      onClick={() => handleOpenAgents(city)}
+                      className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Gérer les agents"
+                    >
+                      <Users className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canEditCities && (
+                    <>
+                      <button
+                        onClick={() => handleOpenSettings(city)}
+                        className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Réglages"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCity(city.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -895,6 +914,7 @@ export default function CitiesPage() {
         </div>
       )}
     </PageShell>
+    </RequirePermission>
   );
 }
 
