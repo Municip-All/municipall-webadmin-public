@@ -18,6 +18,7 @@ import PageShell from "@/components/PageShell";
 import Badge from "@/components/Badge";
 import RequirePermission from "@/components/RequirePermission";
 import { PanelPermission } from "@/lib/panelPermissions";
+import DemoSeedPanel from "@/components/database/DemoSeedPanel";
 
 interface ColumnInfo {
   name: string;
@@ -134,6 +135,8 @@ export default function DatabasePage() {
           </Badge>
         }
       />
+
+      <DemoSeedPanel />
 
       <div className="flex min-h-0 flex-1 gap-4">
         {/* Tables sidebar */}

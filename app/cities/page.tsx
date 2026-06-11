@@ -6,13 +6,12 @@ import {
   Plus,
   MapPin,
   RefreshCcw,
-  Search,
-  CheckCircle2,
   Settings,
   Trash2,
   Users,
   Mail,
   UserCheck,
+  FileText,
 } from "lucide-react";
 import { api, City, CityStats, User, Invitation } from "@/lib/api";
 import {
@@ -26,18 +25,11 @@ import {
   Legend,
 } from "recharts";
 
-interface GouvGeoFeature {
-  type: string;
-  geometry: unknown;
-  properties: {
-    nom: string;
-    code: string;
-    codesPostaux?: string[];
-    population?: number;
-  };
-}
-
 import { useToast } from "@/context/ToastContext";
+import CityCreateWizard from "@/components/cities/CityCreateWizard";
+import CitySettingsModal from "@/components/cities/CitySettingsModal";
+import { integrationTypeLabel } from "@/lib/cityContract";
+import { CITY_FEATURE_OPTIONS } from "@/lib/cityFeatures";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
@@ -55,6 +47,7 @@ export default function CitiesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
   const [isAgentsModalOpen, setIsAgentsModalOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [cityAgents, setCityAgents] = useState<User[]>([]);
@@ -70,22 +63,6 @@ export default function CitiesPage() {
 
   // Stats for the chart
   const [cityStats, setCityStats] = useState<CityStats[]>([]);
-
-  // Add City Form State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<GouvGeoFeature[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedCityGeo, setSelectedCityGeo] = useState<GouvGeoFeature | null>(
-    null,
-  );
-
-  const [formData, setFormData] = useState({
-    name: "",
-    primaryColor: "#244FE5",
-    logoUrl: "",
-    features: "flux-live,agenda,reports",
-    dataRetentionPolicy: "",
-  });
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -106,86 +83,6 @@ export default function CitiesPage() {
       isMounted = false;
     };
   }, [refreshKey]);
-
-  // Search Data.gouv API
-  useEffect(() => {
-    let isMounted = true;
-    const searchTimeout = setTimeout(async () => {
-      if (searchQuery.length > 2) {
-        setIsSearching(true);
-        try {
-          const res = await fetch(
-            `https://geo.api.gouv.fr/communes?nom=${searchQuery}&fields=nom,code,codesPostaux,contour&format=geojson&geometry=contour`,
-          );
-          const data = await res.json();
-          if (isMounted && data.features) {
-            setSearchResults(data.features.slice(0, 5) as GouvGeoFeature[]);
-          }
-        } catch (error) {
-          console.error("Error fetching cities from data.gouv:", error);
-        }
-        if (isMounted) setIsSearching(false);
-      } else {
-        if (isMounted) setSearchResults([]);
-      }
-    }, 500);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(searchTimeout);
-    };
-  }, [searchQuery]);
-
-  const handleSelectCity = (geoFeature: GouvGeoFeature) => {
-    const properties = geoFeature.properties;
-    setSelectedCityGeo(geoFeature);
-    setFormData({ ...formData, name: properties.nom });
-    setSearchQuery("");
-    setSearchResults([]);
-  };
-
-  const handleSaveCity = async () => {
-    if (!selectedCityGeo || !formData.name) return;
-
-    const newCityPayload = {
-      id: formData.name
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]/g, "-"),
-      name: formData.name,
-      primaryColor: formData.primaryColor,
-      logoUrl: formData.logoUrl,
-      features: formData.features.split(",").map((f) => f.trim()),
-      boundary: selectedCityGeo.geometry,
-      dataRetentionPolicy: formData.dataRetentionPolicy.trim() || undefined,
-    };
-
-    const savedCity = await api.addCity(newCityPayload);
-
-    if (savedCity) {
-      setCities([...cities, savedCity]);
-      setIsAddModalOpen(false);
-      setSelectedCityGeo(null);
-      setFormData({
-        name: "",
-        primaryColor: "#244FE5",
-        logoUrl: "",
-        features: "flux-live,agenda,reports",
-        dataRetentionPolicy: "",
-      });
-      setRefreshKey((prev) => prev + 1);
-      toast(
-        "success",
-        `La ville de ${savedCity.name} a été intégrée avec succès !`,
-      );
-    } else {
-      toast(
-        "error",
-        "Échec de l'intégration. Vérifiez que l'API est accessible et que l'ID n'existe pas déjà.",
-      );
-    }
-  };
 
   const handleDeleteCity = async (id: string) => {
     const city = cities.find((c) => c.id === id);
@@ -209,19 +106,41 @@ export default function CitiesPage() {
     setIsSettingsModalOpen(true);
   };
 
-  const handleSaveCitySettings = async () => {
-    if (!selectedCity) return;
-    const updated = await api.updateCity(selectedCity.id, {
-      features: selectedCity.features,
-      isTransportFeatureAllowed: !!selectedCity.isTransportFeatureAllowed,
-      isTransportFeatureEnabled: selectedCity.isTransportFeatureAllowed
-        ? !!selectedCity.isTransportFeatureEnabled
+  const handleSaveCitySettings = async (draft: City) => {
+    setSettingsSaving(true);
+    const updated = await api.updateCity(draft.id, {
+      contractNumber: draft.contractNumber?.trim() || undefined,
+      contractSignedAt: draft.contractSignedAt || undefined,
+      contractNotes: draft.contractNotes?.trim() || undefined,
+      municipalityContactName:
+        draft.municipalityContactName?.trim() || undefined,
+      municipalityContactRole:
+        draft.municipalityContactRole?.trim() || undefined,
+      municipalityContactEmail:
+        draft.municipalityContactEmail?.trim() || undefined,
+      municipalityContactPhone:
+        draft.municipalityContactPhone?.trim() || undefined,
+      contactEmail: draft.contactEmail?.trim() || undefined,
+      contactPhone: draft.contactPhone?.trim() || undefined,
+      contactHelpText: draft.contactHelpText?.trim() || undefined,
+      assignedTechName: draft.assignedTechName?.trim() || undefined,
+      assignedTechEmail: draft.assignedTechEmail?.trim() || undefined,
+      salesRepName: draft.salesRepName?.trim() || undefined,
+      salesRepEmail: draft.salesRepEmail?.trim() || undefined,
+      integrationType: draft.integrationType,
+      primaryColor: draft.primaryColor,
+      logoUrl: draft.logoUrl?.trim() || undefined,
+      features: draft.features,
+      isTransportFeatureAllowed: !!draft.isTransportFeatureAllowed,
+      isTransportFeatureEnabled: draft.isTransportFeatureAllowed
+        ? !!draft.isTransportFeatureEnabled
         : false,
-      dataRetentionPolicy:
-        selectedCity.dataRetentionPolicy?.trim() || undefined,
+      dataRetentionPolicy: draft.dataRetentionPolicy?.trim() || undefined,
     });
+    setSettingsSaving(false);
     if (updated) {
       setCities(cities.map((c) => (c.id === updated.id ? updated : c)));
+      setSelectedCity(updated);
       setIsSettingsModalOpen(false);
       toast("success", `Configuration de ${updated.name} enregistrée.`);
     } else {
@@ -435,6 +354,16 @@ export default function CitiesPage() {
                     <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5">
                       <MapPin className="w-3 h-3" /> PostGIS Boundary
                     </p>
+                    {city.contractNumber && (
+                      <p className="text-xs text-gray-400 font-medium flex items-center gap-1 mt-0.5">
+                        <FileText className="w-3 h-3" /> {city.contractNumber}
+                      </p>
+                    )}
+                    {city.integrationType && (
+                      <p className="text-[10px] text-municipall-blue font-semibold mt-1">
+                        {integrationTypeLabel(city.integrationType)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -469,284 +398,49 @@ export default function CitiesPage() {
               </div>
 
               <div className="flex flex-wrap gap-1.5">
-                {city.features?.map((f: string) => (
-                  <span
-                    key={f}
-                    className="px-2 py-0.5 bg-gray-50 text-gray-400 text-[10px] font-bold uppercase rounded border border-gray-100"
-                  >
-                    {f}
-                  </span>
-                ))}
+                {city.features?.map((f: string) => {
+                  const label =
+                    CITY_FEATURE_OPTIONS.find((o) => o.id === f)?.label ?? f;
+                  return (
+                    <span
+                      key={f}
+                      className="px-2 py-0.5 bg-gray-50 text-gray-400 text-[10px] font-bold uppercase rounded border border-gray-100"
+                    >
+                      {label}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Add City Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
-              <h3 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                <MapPin className="w-6 h-6 text-municipall-blue" />
-                Intégrer une nouvelle ville
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold p-2"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
-              <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 relative">
-                <label className="block text-sm font-bold text-gray-900 mb-2">
-                  1. Rechercher la commune (Data.gouv.fr)
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Saisissez le nom de la ville..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-municipall-blue outline-none"
-                  />
-                  {isSearching && (
-                    <RefreshCcw className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-                  )}
-                </div>
-                {searchResults.length > 0 && (
-                  <div className="absolute top-full left-5 right-5 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-10 overflow-hidden">
-                    {searchResults.map((res: GouvGeoFeature, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSelectCity(res)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 flex items-center justify-between"
-                      >
-                        <span className="font-bold text-gray-900">
-                          {res.properties.nom}
-                        </span>
-                        <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                          {res.properties.codesPostaux?.[0]}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {selectedCityGeo && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center gap-3 p-4 bg-green-50 text-green-700 rounded-xl border border-green-100 mb-6">
-                    <CheckCircle2 className="w-5 h-5 shrink-0" />
-                    <p className="text-sm font-medium">
-                      Limites géographiques récupérées pour{" "}
-                      <strong>{formData.name}</strong>.
-                    </p>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                        Couleur Primaire
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={formData.primaryColor}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              primaryColor: e.target.value,
-                            })
-                          }
-                          className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={formData.primaryColor}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              primaryColor: e.target.value,
-                            })
-                          }
-                          className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-municipall-blue outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                        Modules Activés
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.features}
-                        onChange={(e) =>
-                          setFormData({ ...formData, features: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                        Durées de conservation (RGPD) — contrat commune
-                      </label>
-                      <textarea
-                        value={formData.dataRetentionPolicy}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            dataRetentionPolicy: e.target.value,
-                          })
-                        }
-                        rows={5}
-                        placeholder="Ex. : Signalements conservés 36 mois après clôture. Messages contact 24 mois. Données compte supprimées sous 30 jours après demande d'effacement."
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-municipall-blue outline-none resize-y"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Ce texte est affiché dans l&apos;app mobile (politique
-                        de confidentialité) pour les citoyens de cette ville.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-white">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveCity}
-                disabled={!selectedCityGeo}
-                className="px-5 py-2.5 rounded-xl font-bold text-white bg-municipall-blue hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                Enregistrer la ville
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CityCreateWizard
+        open={isAddModalOpen}
+        canCreateMayor={canManageAgents}
+        onClose={() => setIsAddModalOpen(false)}
+        onCreated={(savedCity, meta) => {
+          setCities([...cities, savedCity]);
+          setRefreshKey((prev) => prev + 1);
+          const mayorPart = meta?.mayorEmail
+            ? ` Compte maire créé (${meta.mayorEmail}).`
+            : "";
+          toast(
+            "success",
+            `La ville de ${savedCity.name} a été intégrée avec succès !${mayorPart}`,
+          );
+        }}
+        onError={(message) => toast("error", message)}
+      />
 
-      {/* Settings Modal (Manage Options/Features) */}
       {isSettingsModalOpen && selectedCity && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-              <h3 className="text-xl font-extrabold text-gray-900">
-                Configuration : {selectedCity.name}
-              </h3>
-              <button
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold p-2"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
-              <div>
-                <p className="text-sm font-bold text-gray-900 mb-3">
-                  Modules activés
-                </p>
-                <label className="flex items-center justify-between p-4 rounded-xl border-2 border-indigo-100 bg-indigo-50/50 hover:bg-indigo-50 cursor-pointer transition-colors mb-4">
-                  <div>
-                    <span className="text-sm font-bold text-gray-900 block">
-                      Transports en commun (IDFM)
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1 block">
-                      Autorise la mairie à activer le module temps réel dans l&apos;app
-                      citoyenne (contrat plateforme).
-                    </span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!!selectedCity.isTransportFeatureAllowed}
-                    onChange={(e) =>
-                      setSelectedCity({
-                        ...selectedCity,
-                        isTransportFeatureAllowed: e.target.checked,
-                        isTransportFeatureEnabled: e.target.checked
-                          ? selectedCity.isTransportFeatureEnabled
-                          : false,
-                      })
-                    }
-                    className="w-5 h-5 rounded border-gray-300 text-municipall-blue focus:ring-municipall-blue"
-                  />
-                </label>
-                {[
-                  "flux-live",
-                  "agenda",
-                  "reports",
-                  "weather",
-                  "security",
-                ].map((feature) => (
-                  <label
-                    key={feature}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors mb-2"
-                  >
-                    <span className="text-sm font-bold text-gray-700 capitalize">
-                      {feature.replace("-", " ")}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={selectedCity.features.includes(feature)}
-                      onChange={(e) => {
-                        const newFeatures = e.target.checked
-                          ? [...selectedCity.features, feature]
-                          : selectedCity.features.filter((f) => f !== feature);
-                        setSelectedCity({
-                          ...selectedCity,
-                          features: newFeatures,
-                        });
-                      }}
-                      className="w-5 h-5 rounded border-gray-300 text-municipall-blue focus:ring-municipall-blue"
-                    />
-                  </label>
-                ))}
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Durées de conservation (RGPD)
-                </label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Selon le contrat signé avec la commune. Affiché dans
-                  l&apos;application mobile pour les citoyens de{" "}
-                  {selectedCity.name}.
-                </p>
-                <textarea
-                  value={selectedCity.dataRetentionPolicy || ""}
-                  onChange={(e) =>
-                    setSelectedCity({
-                      ...selectedCity,
-                      dataRetentionPolicy: e.target.value,
-                    })
-                  }
-                  rows={6}
-                  placeholder="Ex. : Signalements : 36 mois après clôture. Tickets contact : 24 mois. Comptes inactifs : 3 ans."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-municipall-blue outline-none resize-y"
-                />
-              </div>
-            </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 shrink-0">
-              <button
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveCitySettings}
-                className="px-5 py-2.5 rounded-xl font-bold text-white bg-municipall-blue hover:bg-blue-700"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
+        <CitySettingsModal
+          city={selectedCity}
+          saving={settingsSaving}
+          onClose={() => setIsSettingsModalOpen(false)}
+          onSave={handleSaveCitySettings}
+        />
       )}
 
       {/* Agents Modal (Real Agents & Invitations) */}

@@ -76,6 +76,8 @@ async function adminRequestOrThrow<T>(
   return parseAdminJson<T>(response);
 }
 
+export type CityIntegrationType = "widget" | "mobile_app" | "both";
+
 export interface City {
   id: string;
   name: string;
@@ -88,6 +90,21 @@ export interface City {
   isTransportFeatureEnabled?: boolean;
   boundary?: unknown;
   dataRetentionPolicy?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactHelpText?: string;
+  contractNumber?: string;
+  contractSignedAt?: string;
+  contractNotes?: string;
+  municipalityContactName?: string;
+  municipalityContactRole?: string;
+  municipalityContactEmail?: string;
+  municipalityContactPhone?: string;
+  assignedTechName?: string;
+  assignedTechEmail?: string;
+  salesRepName?: string;
+  salesRepEmail?: string;
+  integrationType?: CityIntegrationType;
 }
 
 export interface CityStats {
@@ -173,6 +190,25 @@ export const api = {
     return adminRequest(
       `/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`,
       { cache: "no-store" },
+    );
+  },
+
+  async getDemoSeedStatus(): Promise<{ enabled: boolean } | null> {
+    return adminRequest<{ enabled: boolean }>(`/api/v1/admin/demo/seed/status`, {
+      cache: "no-store",
+    });
+  },
+
+  async runDemoSeed(options?: {
+    reset?: boolean;
+  }): Promise<{ output: string; durationMs: number }> {
+    return adminRequestOrThrow<{ output: string; durationMs: number }>(
+      `/api/v1/admin/demo/seed`,
+      {
+        method: "POST",
+        body: JSON.stringify(options ?? {}),
+        cache: "no-store",
+      },
     );
   },
 
