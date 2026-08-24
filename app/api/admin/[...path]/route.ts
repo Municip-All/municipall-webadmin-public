@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const ADMIN_KEY = process.env.PLATFORM_ADMIN_KEY?.trim() ?? "";
 
+const ALLOWED_ENVS = new Set(["DEV", "PROD"]);
+
 function getBackendUrl(env: string | null): string {
   if (env === "PROD") {
     return process.env.NEXT_PUBLIC_API_URL || "https://api.municipall.dev";
@@ -55,7 +57,14 @@ async function proxyRequest(
     );
   }
 
-  const env = request.headers.get("x-admin-env") || "DEV";
+  const rawEnv = request.headers.get("x-admin-env") || "DEV";
+  if (!ALLOWED_ENVS.has(rawEnv)) {
+    return NextResponse.json(
+      { message: "Invalid x-admin-env value." },
+      { status: 400 },
+    );
+  }
+  const env = rawEnv;
   const backendUrl = getBackendUrl(env);
   const apiPath = "/api/v1/admin/" + params.path.join("/");
   const url = new URL(request.url);
