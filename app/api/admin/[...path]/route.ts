@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { DEV_API_FALLBACK, PROD_API_FALLBACK } from "../../../../lib/environment";
 
 const ADMIN_KEY = process.env.PLATFORM_ADMIN_KEY?.trim() ?? "";
 
@@ -6,9 +7,9 @@ const ALLOWED_ENVS = new Set(["DEV", "PROD"]);
 
 function getBackendUrl(env: string | null): string {
   if (env === "PROD") {
-    return process.env.NEXT_PUBLIC_API_URL || "https://api.municipall.dev";
+    return process.env.NEXT_PUBLIC_API_URL || PROD_API_FALLBACK;
   }
-  return process.env.NEXT_PUBLIC_API_URL_DEV || "https://dev.api.municipall.dev";
+  return process.env.NEXT_PUBLIC_API_URL_DEV || DEV_API_FALLBACK;
 }
 
 export async function GET(

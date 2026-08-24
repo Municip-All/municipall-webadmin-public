@@ -139,7 +139,7 @@ export default function CityCreateWizard({
         setIsSearching(true);
         try {
           const res = await fetch(
-            `https://geo.api.gouv.fr/communes?nom=${searchQuery}&fields=nom,code,codesPostaux,contour&format=geojson&geometry=contour`,
+            `https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(searchQuery)}&fields=nom,code,codesPostaux,contour&format=geojson&geometry=contour`,
           );
           const data = await res.json();
           if (isMounted && data.features) {

@@ -35,13 +35,14 @@ export function setStoredAdminEnvironment(env: AdminEnvironment): void {
   localStorage.setItem(ENV_STORAGE_KEY, env);
 }
 
+export const DEV_API_FALLBACK = "https://dev.api.municipall.dev";
+export const PROD_API_FALLBACK = "https://api.municipall.dev";
+
 export function getApiBaseUrlForEnvironment(env: AdminEnvironment): string {
   if (env === "DEV") {
-    return (
-      process.env.NEXT_PUBLIC_API_URL_DEV || "https://dev.api.municipall.dev"
-    );
+    return process.env.NEXT_PUBLIC_API_URL_DEV || DEV_API_FALLBACK;
   }
-  return process.env.NEXT_PUBLIC_API_URL || "https://api.municipall.dev";
+  return process.env.NEXT_PUBLIC_API_URL || PROD_API_FALLBACK;
 }
 
 export function getApiBaseUrl(): string {

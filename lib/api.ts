@@ -1,3 +1,14 @@
+export interface ColumnInfo {
+  name: string;
+  type: string;
+}
+
+export interface TableData {
+  columns: ColumnInfo[];
+  data: Record<string, unknown>[];
+  total: number;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -8,7 +19,6 @@ export interface User {
   points?: number;
   created_at: string;
   updated_at?: string;
-  update_at?: string;
 }
 
 export type UpdateUserPayload = {
@@ -186,7 +196,7 @@ export const api = {
     });
   },
 
-  async getTableData(tableName: string, limit = 50, offset = 0) {
+  async getTableData(tableName: string, limit = 50, offset = 0): Promise<TableData | null> {
     return adminRequest(
       `/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`,
       { cache: "no-store" },
@@ -225,9 +235,9 @@ export const api = {
         throw new Error(json.error || "Failed to execute query");
       return json.data;
     } catch (error: unknown) {
-      const err = error as Error;
-      console.error("[API DEBUG] Error executing query:", err);
-      return { error: err.message };
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[API DEBUG] Error executing query:", message);
+      return { error: message };
     }
   },
 

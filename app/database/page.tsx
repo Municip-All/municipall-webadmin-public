@@ -12,7 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import clsx from "clsx";
-import { api } from "@/lib/api";
+import { api, type TableData } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import Badge from "@/components/Badge";
@@ -20,17 +20,6 @@ import RequirePermission from "@/components/RequirePermission";
 import { PanelPermission } from "@/lib/panelPermissions";
 import DemoSeedPanel from "@/components/database/DemoSeedPanel";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
-
-interface ColumnInfo {
-  name: string;
-  type: string;
-}
-
-interface TableData {
-  columns: ColumnInfo[];
-  data: Record<string, unknown>[];
-  total: number;
-}
 
 export default function DatabasePage() {
   const [tables, setTables] = useState<string[]>([]);
@@ -70,7 +59,7 @@ export default function DatabasePage() {
       const fetchTableData = async () => {
         setIsLoading(true);
         const data = await api.getTableData(selectedTable);
-        if (isMounted && data) setTableData(data as TableData);
+        if (isMounted && data) setTableData(data);
         if (isMounted) setIsLoading(false);
       };
       fetchTableData();
@@ -135,7 +124,7 @@ export default function DatabasePage() {
     if (!selectedTable) return;
     setIsLoading(true);
     api.getTableData(selectedTable).then((d) => {
-      setTableData(d as TableData);
+      setTableData(d);
       setIsLoading(false);
     });
   };
