@@ -19,6 +19,7 @@ import Badge from "@/components/Badge";
 import RequirePermission from "@/components/RequirePermission";
 import { PanelPermission } from "@/lib/panelPermissions";
 import DemoSeedPanel from "@/components/database/DemoSeedPanel";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 
 interface ColumnInfo {
   name: string;
@@ -79,8 +80,24 @@ export default function DatabasePage() {
     };
   }, [selectedTable, activeTab]);
 
+  const { confirm } = useConfirmDialog();
+
+  const DESTRUCTIVE_PATTERN = /\b(DELETE|DROP|UPDATE|TRUNCATE)\b/i;
+
   const handleExecuteSql = useCallback(async () => {
     if (!sqlQuery.trim()) return;
+
+    if (DESTRUCTIVE_PATTERN.test(sqlQuery)) {
+      const confirmed = await confirm({
+        title: "Requête destructive détectée",
+        message: `Cette requête contient des mots-clés pouvant modifier ou supprimer des données (DELETE, DROP, UPDATE, TRUNCATE). Voulez-vous vraiment l'exécuter ?`,
+        confirmLabel: "Exécuter quand même",
+        cancelLabel: "Annuler",
+        variant: "danger",
+      });
+      if (!confirmed) return;
+    }
+
     setIsExecuting(true);
     setSqlError(null);
     setSqlResult(null);
