@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -42,7 +42,6 @@ import {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { confirm } = useConfirmDialog();
   const { role, setRole, can } = usePanelRole();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
@@ -125,7 +124,7 @@ export default function Sidebar() {
     setRole(nextRole);
     setRoleMenuOpen(false);
     if (pathname !== "/") {
-      router.push("/");
+      window.location.assign("/");
     }
   };
 
