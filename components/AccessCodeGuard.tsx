@@ -19,8 +19,6 @@ import {
   type PanelRole,
 } from "@/lib/platformRoles";
 
-const VALID_CODE = "MUNICIPALL2026";
-
 const ROLE_ICONS: Record<PanelRole, React.ElementType> = {
   chief: Crown,
   tech: Wrench,
@@ -60,13 +58,24 @@ export default function AccessCodeGuard({
     }
   }, [isAuthorized]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.toUpperCase() === VALID_CODE) {
-      localStorage.setItem("admin_authorized", "true");
-      setIsAuthorized(true);
-      setError(false);
-    } else {
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        localStorage.setItem("admin_authorized", "true");
+        setIsAuthorized(true);
+        setError(false);
+      } else {
+        setError(true);
+        setTimeout(() => setError(false), 2000);
+      }
+    } catch {
       setError(true);
       setTimeout(() => setError(false), 2000);
     }
