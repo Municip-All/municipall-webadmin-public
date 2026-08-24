@@ -5,6 +5,8 @@ services:
     restart: always
     ports:
       - "5000:3000"
+    environment:
+      - PLATFORM_ADMIN_KEY=${PLATFORM_ADMIN_KEY}
     networks:
       - proxy-bridge
 
