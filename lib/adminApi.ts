@@ -1,29 +1,24 @@
-import { getApiBaseUrl } from "./environment";
+import { getStoredAdminEnvironment } from "./environment";
 
-function getPlatformAdminKey(): string {
-  return process.env.NEXT_PUBLIC_PLATFORM_ADMIN_KEY?.trim() ?? "";
+function getAdminEnv(): string {
+  if (typeof window === "undefined") return "DEV";
+  return getStoredAdminEnvironment();
 }
 
-export function assertPlatformAdminKeyConfigured(): void {
-  if (typeof window === "undefined") return;
-  if (!getPlatformAdminKey()) {
-    console.warn(
-      "[Municipall WebAdmin] NEXT_PUBLIC_PLATFORM_ADMIN_KEY est vide. " +
-        "Ajoutez-la dans .env puis redémarrez le serveur Next.js.",
-    );
-  }
-}
+export function assertPlatformAdminKeyConfigured(): void {}
 
 export async function adminFetch(
   path: string,
   init?: RequestInit,
 ): Promise<Response> {
-  const key = getPlatformAdminKey();
-  return fetch(`${getApiBaseUrl()}${path}`, {
+  const bffPath = `/api/admin${path.replace(/^\/api\/v1\/admin/, "")}`;
+  const env = getAdminEnv();
+
+  return fetch(bffPath, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...(key ? { "x-platform-admin-key": key } : {}),
+      "x-admin-env": env,
       ...(init?.headers as Record<string, string> | undefined),
     },
   });
@@ -59,10 +54,16 @@ export async function parseAdminJson<T>(response: Response): Promise<T> {
       );
     }
 
-    if (response.status === 403 && !getPlatformAdminKey()) {
-      throw new Error(
-        "Clé plateforme manquante côté WebAdmin (NEXT_PUBLIC_PLATFORM_ADMIN_KEY dans .env).",
-      );
+    if (response.status === 500) {
+      const serverMsg =
+        typeof body === "object" && body !== null && "message" in body
+          ? (body as { message: unknown }).message
+          : null;
+      if (typeof serverMsg === "string" && serverMsg.includes("PLATFORM_ADMIN_KEY")) {
+        throw new Error(
+          "Clé plateforme non configurée sur le serveur (PLATFORM_ADMIN_KEY).",
+        );
+      }
     }
 
     throw new Error(message);

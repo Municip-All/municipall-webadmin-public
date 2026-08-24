@@ -18,7 +18,7 @@ jobs:
         run: npm ci
       - name: Build
         env:
-          NEXT_PUBLIC_PLATFORM_ADMIN_KEY: ${{ secrets.PLATFORM_ADMIN_KEY }}
+          PLATFORM_ADMIN_KEY: ${{ secrets.PLATFORM_ADMIN_KEY }}
         run: npm run build
 
   build-and-push:
@@ -44,7 +44,7 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.OWNER_LC }}/municipall-webadmin:latest
           build-args: |
-            NEXT_PUBLIC_PLATFORM_ADMIN_KEY=${{ secrets.PLATFORM_ADMIN_KEY }}
+            PLATFORM_ADMIN_KEY=${{ secrets.PLATFORM_ADMIN_KEY }}
 
   deploy:
     needs: build-and-push

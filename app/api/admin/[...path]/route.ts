@@ -1,0 +1,101 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const ADMIN_KEY = process.env.PLATFORM_ADMIN_KEY?.trim() ?? "";
+
+function getBackendUrl(env: string | null): string {
+  if (env === "PROD") {
+    return process.env.NEXT_PUBLIC_API_URL || "https://api.municipall.dev";
+  }
+  return process.env.NEXT_PUBLIC_API_URL_DEV || "https://dev.api.municipall.dev";
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  return proxyRequest(request, await params);
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  return proxyRequest(request, await params);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  return proxyRequest(request, await params);
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  return proxyRequest(request, await params);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  return proxyRequest(request, await params);
+}
+
+async function proxyRequest(
+  request: NextRequest,
+  params: { path: string[] },
+) {
+  if (!ADMIN_KEY) {
+    return NextResponse.json(
+      { message: "PLATFORM_ADMIN_KEY is not configured on the server." },
+      { status: 500 },
+    );
+  }
+
+  const env = request.headers.get("x-admin-env") || "DEV";
+  const backendUrl = getBackendUrl(env);
+  const apiPath = "/api/v1/admin/" + params.path.join("/");
+  const url = new URL(request.url);
+  const targetUrl = `${backendUrl}${apiPath}${url.search}`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-platform-admin-key": ADMIN_KEY,
+  };
+
+  let body: string | undefined;
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    body = await request.text();
+  }
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: request.method,
+      headers,
+      body,
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+
+    if (isJson) {
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    const text = await response.text();
+    return new NextResponse(text, {
+      status: response.status,
+      headers: { "content-type": contentType },
+    });
+  } catch (error) {
+    console.error("[BFF Proxy] Error proxying request:", error);
+    return NextResponse.json(
+      { message: "Failed to reach the backend API." },
+      { status: 502 },
+    );
+  }
+}
