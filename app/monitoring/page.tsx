@@ -13,16 +13,20 @@ import { PanelPermission } from "@/lib/panelPermissions";
 export default function MonitoringPage() {
   const [containers, setContainers] = useState<DockerContainer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchContainers = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const data = await api.getDockerContainers();
       if (data) {
         setContainers(data);
         setLastUpdated(new Date());
       }
+    } catch {
+      setLoadError("Impossible de charger les conteneurs. Réessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +77,12 @@ export default function MonitoringPage() {
           </button>
         }
       />
+
+      {loadError && (
+        <div className="mb-6 rounded-xl bg-red-50 px-5 py-3.5 text-sm font-medium text-red-700 ring-1 ring-red-200">
+          {loadError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {containers.map((container) => (

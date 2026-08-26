@@ -93,29 +93,34 @@ export default function UsersPage() {
     if (!editingUser || !canEdit) return;
 
     setSaving(true);
-    const payload: Parameters<typeof api.updateUser>[1] = {
-      name: form.name.trim(),
-      surname: form.surname.trim(),
-      role: form.role,
-      cityId: form.cityId || "",
-    };
-    if (form.password.trim()) {
-      payload.password = form.password.trim();
+    try {
+      const payload: Parameters<typeof api.updateUser>[1] = {
+        name: form.name.trim(),
+        surname: form.surname.trim(),
+        role: form.role,
+        cityId: form.cityId || "",
+      };
+      if (form.password.trim()) {
+        payload.password = form.password.trim();
+      }
+
+      const updated = await api.updateUser(editingUser.id, payload);
+
+      if (!updated) {
+        toast("error", "Impossible de mettre à jour l'utilisateur.");
+        return;
+      }
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)),
+      );
+      setEditingUser(null);
+      toast("success", "Compte mis à jour.");
+    } catch {
+      toast("error", "Erreur lors de la mise à jour.");
+    } finally {
+      setSaving(false);
     }
-
-    const updated = await api.updateUser(editingUser.id, payload);
-    setSaving(false);
-
-    if (!updated) {
-      toast("error", "Impossible de mettre à jour l'utilisateur.");
-      return;
-    }
-
-    setUsers((prev) =>
-      prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)),
-    );
-    setEditingUser(null);
-    toast("success", "Compte mis à jour.");
   };
 
   const handleDeleteUser = async (user: User) => {

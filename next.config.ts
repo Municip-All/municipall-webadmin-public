@@ -32,6 +32,8 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https:",
               "font-src 'self' data:",
               "connect-src 'self' https://geo.api.gouv.fr",
+              "object-src 'none'",
+              "base-uri 'self'",
               "frame-ancestors 'none'",
             ].join("; "),
           },

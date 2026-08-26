@@ -22,6 +22,7 @@ export default function AgentsPage() {
   const [cities, setCities] = useState<City[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -31,15 +32,18 @@ export default function AgentsPage() {
   });
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       setIsLoading(true);
+      setLoadError(null);
       const cityData = await api.getCities();
+      if (cancelled) return;
       if (cityData) {
         setCities(cityData);
-        // Fetch invitations for all cities
         const allInvs: Invitation[] = [];
         for (const city of cityData) {
           const invs = await api.getCityInvitations(city.id);
+          if (cancelled) return;
           if (invs) allInvs.push(...invs);
         }
         setInvitations(
@@ -48,10 +52,15 @@ export default function AgentsPage() {
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           ),
         );
+      } else {
+        setLoadError("Impossible de charger les données. Réessayez.");
       }
-      setIsLoading(false);
+      if (!cancelled) setIsLoading(false);
     };
-    fetchData().catch(console.error);
+    void fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const getCityName = (cityId: string) => {
@@ -92,6 +101,12 @@ export default function AgentsPage() {
         title="Agents"
         description="Inscrivez de nouveaux agents municipaux et définissez leurs droits d'accès."
       />
+
+      {loadError && (
+        <div className="mb-6 rounded-xl bg-red-50 px-5 py-3.5 text-sm font-medium text-red-700 ring-1 ring-red-200">
+          {loadError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3">

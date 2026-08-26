@@ -30,6 +30,7 @@ export async function adminFetch(
 
   return fetch(bffPath, {
     ...init,
+    signal: init?.signal ?? AbortSignal.timeout(30_000),
     headers: {
       "Content-Type": "application/json",
       "x-admin-env": env,

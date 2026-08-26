@@ -28,6 +28,7 @@ export default function DatabasePage() {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableData, setTableData] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [sqlQuery, setSqlQuery] = useState("SELECT * FROM user LIMIT 10;");
   const [sqlResult, setSqlResult] = useState<Record<string, unknown>[] | null>(
@@ -40,10 +41,13 @@ export default function DatabasePage() {
     let isMounted = true;
     const fetchTables = async () => {
       setIsLoading(true);
+      setLoadError(null);
       const data = await api.getTables();
       if (isMounted && data) {
         setTables(data);
         if (data.length > 0) setSelectedTable(data[0]);
+      } else if (isMounted && !data) {
+        setLoadError("Impossible de charger les tables. Réessayez.");
       }
       if (isMounted) setIsLoading(false);
     };
@@ -143,6 +147,12 @@ export default function DatabasePage() {
       />
 
       <DemoSeedPanel />
+
+      {loadError && (
+        <div className="mb-6 rounded-xl bg-red-50 px-5 py-3.5 text-sm font-medium text-red-700 ring-1 ring-red-200">
+          {loadError}
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1 gap-4">
         {/* Tables sidebar */}

@@ -12,6 +12,7 @@ import {
   HardDrive,
   Zap,
   RefreshCcw,
+  AlertCircle,
 } from "lucide-react";
 import clsx from "clsx";
 import StatCard from "@/components/StatCard";
@@ -43,12 +44,14 @@ export default function Dashboard() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [cityStats, setCityStats] = useState<CityStats[]>([]);
   const [citySearch, setCitySearch] = useState("");
 
   const fetchStats = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const [statsData, activityData, cityStatsData] = await Promise.all([
         api.getStats(),
@@ -63,6 +66,8 @@ export default function Dashboard() {
           cityStatsData.sort((a, b) => b.users - a.users).slice(0, 3),
         );
       setLastUpdated(new Date());
+    } catch {
+      setLoadError("Impossible de charger les données. Réessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +121,22 @@ export default function Dashboard() {
       ]
     : [];
 
+  if (loadError && !stats && !isLoading) {
+    return (
+      <PageShell>
+        <PageHeader title="Vue d'ensemble" description="Données en temps réel du réseau Municip'All" />
+        <div className="card-panel flex flex-col items-center justify-center gap-4 py-20 text-center">
+          <AlertCircle className="h-10 w-10 text-red-400" />
+          <p className="text-sm font-medium text-slate-600">{loadError}</p>
+          <button type="button" onClick={fetchStats} className="btn-secondary">
+            <RefreshCcw className="h-4 w-4" />
+            Réessayer
+          </button>
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <PageHeader
@@ -165,6 +186,12 @@ export default function Dashboard() {
           </>
         }
       />
+
+      {loadError && (
+        <div className="mb-6 rounded-xl bg-red-50 px-5 py-3.5 text-sm font-medium text-red-700 ring-1 ring-red-200">
+          {loadError}
+        </div>
+      )}
 
       <section className="mb-10">
         <h2 className="section-title mb-4">Indicateurs clés</h2>

@@ -65,7 +65,12 @@ export async function POST(request: NextRequest) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
   }
 
-  const body = await request.json();
+  let body: { code?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ valid: false, error: "Invalid JSON body." }, { status: 400 });
+  }
   const code = typeof body.code === "string" ? body.code.trim() : "";
 
   const valid = safeEqual(code, ADMIN_KEY);

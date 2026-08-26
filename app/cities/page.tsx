@@ -98,6 +98,8 @@ export default function CitiesPage() {
     if (success) {
       setCities(cities.filter((c) => c.id !== id));
       setRefreshKey((prev) => prev + 1);
+    } else {
+      toast("error", "Impossible de supprimer la ville.");
     }
   };
 
@@ -165,6 +167,8 @@ export default function CitiesPage() {
     if (invite) {
       setCityInvitations([invite, ...cityInvitations]);
       setInviteEmail("");
+    } else {
+      toast("error", "Impossible d'envoyer l'invitation.");
     }
   };
 
@@ -210,12 +214,13 @@ export default function CitiesPage() {
   const handleForceAccept = async (invitationId: number) => {
     const success = await api.forceAcceptInvitation(invitationId);
     if (success && selectedCity) {
-      // Refresh agents and invitations lists
       const agents = await api.getCityAgents(selectedCity.id);
       const invitations = await api.getCityInvitations(selectedCity.id);
       setCityAgents(agents || []);
       setCityInvitations(invitations || []);
-      setRefreshKey((prev) => prev + 1); // Refresh global stats
+      setRefreshKey((prev) => prev + 1);
+    } else {
+      toast("error", "Impossible d'accepter l'invitation.");
     }
   };
 
