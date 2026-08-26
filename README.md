@@ -93,7 +93,7 @@ Créer un fichier `.env.local` :
 ```env
 NEXT_PUBLIC_API_URL=https://api.municipall.dev
 NEXT_PUBLIC_API_URL_DEV=https://dev.api.municipall.dev
-NEXT_PUBLIC_PLATFORM_ADMIN_KEY=votre_cle_plateforme
+PLATFORM_ADMIN_KEY=votre_cle_plateforme
 ```
 
 > La clé doit correspondre à `PLATFORM_ADMIN_KEY` du backend.
@@ -104,7 +104,7 @@ NEXT_PUBLIC_PLATFORM_ADMIN_KEY=votre_cle_plateforme
 |----------|-------------|--------|
 | `NEXT_PUBLIC_API_URL` | API production | `https://api.municipall.dev` |
 | `NEXT_PUBLIC_API_URL_DEV` | API développement | `https://dev.api.municipall.dev` |
-| `NEXT_PUBLIC_PLATFORM_ADMIN_KEY` | Clé header `x-platform-admin-key` | — |
+| `PLATFORM_ADMIN_KEY` | Clé header `x-platform-admin-key` | — |
 
 L'environnement actif (DEV/PROD) est aussi stocké dans `localStorage` (`municipall_env`).
 

@@ -385,7 +385,7 @@ export default function CitiesPage() {
                     <button
                       onClick={() => handleOpenAgents(city)}
                       className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Gérer les agents"
+                      aria-label="Gérer les agents"
                     >
                       <Users className="w-4 h-4" />
                     </button>
@@ -395,14 +395,14 @@ export default function CitiesPage() {
                       <button
                         onClick={() => handleOpenSettings(city)}
                         className="p-2 text-gray-400 hover:text-municipall-blue hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Réglages"
+                        aria-label="Réglages"
                       >
                         <Settings className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteCity(city.id)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Supprimer"
+                        aria-label="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -468,6 +468,7 @@ export default function CitiesPage() {
               <button
                 onClick={() => setIsAgentsModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 font-bold p-2"
+                aria-label="Fermer"
               >
                 ✕
               </button>

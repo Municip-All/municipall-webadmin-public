@@ -3,6 +3,10 @@ import { DEV_API_FALLBACK, PROD_API_FALLBACK } from "../../../../lib/environment
 
 const ADMIN_KEY = process.env.PLATFORM_ADMIN_KEY?.trim() ?? "";
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
 const ALLOWED_ENVS = new Set(["DEV", "PROD"]);
 
 function getBackendUrl(env: string | null): string {
@@ -56,6 +60,23 @@ async function proxyRequest(
       { message: "PLATFORM_ADMIN_KEY is not configured on the server." },
       { status: 500 },
     );
+  }
+
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > 10 * 1024 * 1024) {
+    return NextResponse.json({ message: "Request body too large." }, { status: 413 });
+  }
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (entry && now < entry.resetAt) {
+    if (entry.count >= RATE_LIMIT_MAX) {
+      return NextResponse.json({ message: "Too many requests." }, { status: 429 });
+    }
+    entry.count++;
+  } else {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
   }
 
   const rawEnv = request.headers.get("x-admin-env") || "DEV";

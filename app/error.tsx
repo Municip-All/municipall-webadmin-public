@@ -1,24 +1,17 @@
 "use client";
+import { useEffect } from "react";
 
-import { AlertCircle, RefreshCcw } from "lucide-react";
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+  }, [error]);
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-      <AlertCircle className="h-10 w-10 text-red-400" />
-      <p className="text-sm font-medium text-slate-600">
-        Une erreur est survenue.
-      </p>
-      <button type="button" onClick={reset} className="btn-secondary">
-        <RefreshCcw className="h-4 w-4" />
-        Réessayer
-      </button>
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+      <div className="card-panel max-w-md p-8 text-center">
+        <h2 className="text-lg font-semibold text-slate-900">Une erreur est survenue</h2>
+        <p className="mt-2 text-sm text-slate-500">Une erreur inattendue s&apos;est produite. Veuillez réessayer.</p>
+        <button type="button" onClick={reset} className="btn-primary mt-6">Réessayer</button>
+      </div>
     </div>
   );
 }
