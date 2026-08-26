@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   UserPlus,
   ShieldCheck,
@@ -24,6 +24,7 @@ export default function AgentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -63,6 +64,12 @@ export default function AgentsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
+
   const getCityName = (cityId: string) => {
     return cities.find((c) => c.id === cityId)?.name || "N/A";
   };
@@ -79,7 +86,8 @@ export default function AgentsPage() {
     if (result) {
       setIsSuccess(true);
       setInvitations([result, ...invitations]);
-      setTimeout(() => setIsSuccess(false), 5000);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setIsSuccess(false), 5000);
       setFormData({ name: "", email: "", cityId: "", permission: "standard" });
     }
   };

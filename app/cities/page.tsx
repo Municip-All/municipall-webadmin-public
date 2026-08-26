@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Building2,
   Plus,
@@ -83,6 +83,15 @@ export default function CitiesPage() {
       isMounted = false;
     };
   }, [refreshKey]);
+
+  const closeAgentsModal = useCallback(() => setIsAgentsModalOpen(false), []);
+
+  useEffect(() => {
+    if (!isAgentsModalOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeAgentsModal(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isAgentsModalOpen, closeAgentsModal]);
 
   const handleDeleteCity = async (id: string) => {
     const city = cities.find((c) => c.id === id);
@@ -450,7 +459,7 @@ export default function CitiesPage() {
 
       {/* Agents Modal (Real Agents & Invitations) */}
       {isAgentsModalOpen && selectedCity && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeAgentsModal}>
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h3 className="text-xl font-extrabold text-gray-900">

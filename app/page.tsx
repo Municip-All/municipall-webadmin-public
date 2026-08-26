@@ -362,7 +362,6 @@ export default function Dashboard() {
               </select>
             </div>
             <div className="flex h-52 items-end justify-between gap-2">
-              {/* TODO: replace placeholder data with real API endpoint for city activity */}
               {[65, 45, 75, 55, 90, 65, 80].map((h, i) => (
                 <div
                   key={i}
