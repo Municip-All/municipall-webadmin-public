@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const ALLOWED_ENVS = new Set(["DEV", "PROD"]);
 
 function getExpectedSessionHmac(): string {
   return createHmac("sha256", process.env.PLATFORM_ADMIN_KEY ?? "").update("admin-session").digest("hex");
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 export function middleware(request: NextRequest) {
@@ -13,7 +20,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/admin") && !pathname.startsWith("/api/admin/auth")) {
     const session = request.cookies.get("admin_session");
     const expected = getExpectedSessionHmac();
-    if (!session?.value || session.value !== expected) {
+    if (!session?.value || !safeEqual(session.value, expected)) {
       return NextResponse.json(
         { message: "Unauthorized" },
         { status: 401 },

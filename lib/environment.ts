@@ -44,10 +44,3 @@ export function getApiBaseUrlForEnvironment(env: AdminEnvironment): string {
   }
   return process.env.NEXT_PUBLIC_API_URL || PROD_API_FALLBACK;
 }
-
-export function getApiBaseUrl(): string {
-  if (typeof window === "undefined") {
-    return getApiBaseUrlForEnvironment(DEFAULT_ADMIN_ENVIRONMENT);
-  }
-  return getApiBaseUrlForEnvironment(getStoredAdminEnvironment());
-}

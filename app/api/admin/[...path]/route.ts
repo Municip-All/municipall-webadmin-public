@@ -72,13 +72,16 @@ async function proxyRequest(
   const targetUrl = `${backendUrl}${apiPath}${url.search}`;
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     "x-platform-admin-key": ADMIN_KEY,
   };
 
   let body: string | undefined;
   if (request.method !== "GET" && request.method !== "HEAD") {
     body = await request.text();
+    const originalContentType = request.headers.get("content-type");
+    headers["Content-Type"] = originalContentType || "application/json";
+  } else {
+    headers["Content-Type"] = "application/json";
   }
 
   try {
@@ -86,6 +89,7 @@ async function proxyRequest(
       method: request.method,
       headers,
       body,
+      signal: AbortSignal.timeout(30_000),
     });
 
     const contentType = response.headers.get("content-type") || "";
