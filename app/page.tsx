@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [cityStats, setCityStats] = useState<CityStats[]>([]);
+  const [citySearch, setCitySearch] = useState("");
 
   const fetchStats = async () => {
     setIsLoading(true);
@@ -66,6 +67,10 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
+
+  const filteredCityStats = cityStats.filter((c) =>
+    c.name.toLowerCase().includes(citySearch.toLowerCase()),
+  );
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -143,6 +148,8 @@ export default function Dashboard() {
                 type="text"
                 placeholder="Rechercher une ville…"
                 className="input-field w-56 pl-9"
+                value={citySearch}
+                onChange={(e) => setCitySearch(e.target.value)}
               />
             </div>
             <button
@@ -328,6 +335,7 @@ export default function Dashboard() {
               </select>
             </div>
             <div className="flex h-52 items-end justify-between gap-2">
+              {/* TODO: replace placeholder data with real API endpoint for city activity */}
               {[65, 45, 75, 55, 90, 65, 80].map((h, i) => (
                 <div
                   key={i}
@@ -351,8 +359,8 @@ export default function Dashboard() {
                 Top villes (citoyens)
               </h3>
               <div className="space-y-2">
-                {cityStats.length > 0 ? (
-                  cityStats.map((city, idx) => (
+                {filteredCityStats.length > 0 ? (
+                  filteredCityStats.map((city, idx) => (
                     <div
                       key={idx}
                       className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100"
@@ -442,7 +450,8 @@ export default function Dashboard() {
             </div>
             <button
               type="button"
-              className="btn-ghost mt-5 w-full text-municipall-blue"
+              className="btn-ghost mt-5 w-full cursor-not-allowed text-slate-400"
+              disabled
             >
               Voir tout l&apos;historique
             </button>
@@ -456,7 +465,8 @@ export default function Dashboard() {
             </p>
             <button
               type="button"
-              className="mt-4 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-municipall-blue transition-colors hover:bg-slate-50"
+              className="mt-4 cursor-not-allowed rounded-lg bg-white/60 px-4 py-2 text-xs font-semibold text-municipall-blue/50"
+              disabled
             >
               Contacter le support
             </button>

@@ -279,9 +279,10 @@ export default function Sidebar() {
         <div className="space-y-0.5">
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors"
+            disabled
           >
-            <Settings className="h-[18px] w-[18px] text-slate-400" />
+            <Settings className="h-[18px] w-[18px] text-slate-300" />
             Paramètres
           </button>
           <button

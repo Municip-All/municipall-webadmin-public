@@ -156,7 +156,7 @@ export default function UsersPage() {
           title="Utilisateurs"
           description="Consultez et gérez les accès de tous les utilisateurs du réseau."
           actions={
-            <button type="button" className="btn-secondary">
+            <button type="button" className="btn-secondary cursor-not-allowed opacity-50" disabled>
               Exporter
             </button>
           }

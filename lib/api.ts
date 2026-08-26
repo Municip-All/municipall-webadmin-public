@@ -142,32 +142,25 @@ export interface Activity {
 
 export const api = {
   async getStats(): Promise<MonitoringStats | null> {
-    return adminRequest<MonitoringStats>(`/api/v1/admin/stats`, {
-      cache: "no-store",
-    });
+    return adminRequest<MonitoringStats>(`/api/v1/admin/stats`);
   },
 
   async getActivity(): Promise<Activity[] | null> {
-    return adminRequest<Activity[]>(`/api/v1/admin/activity`, {
-      cache: "no-store",
-    });
+    return adminRequest<Activity[]>(`/api/v1/admin/activity`);
   },
 
   async getUsers(): Promise<User[] | null> {
-    return adminRequest<User[]>(`/api/v1/admin/users`, { cache: "no-store" });
+    return adminRequest<User[]>(`/api/v1/admin/users`);
   },
 
   async getUser(id: number): Promise<User | null> {
-    return adminRequest<User>(`/api/v1/admin/users/${id}`, {
-      cache: "no-store",
-    });
+    return adminRequest<User>(`/api/v1/admin/users/${id}`);
   },
 
   async updateUser(id: number, data: UpdateUserPayload): Promise<User | null> {
     return adminRequest<User>(`/api/v1/admin/users/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
-      cache: "no-store",
     });
   },
 
@@ -175,7 +168,6 @@ export const api = {
     try {
       const response = await adminFetch(`/api/v1/admin/users/${id}`, {
         method: "DELETE",
-        cache: "no-store",
       });
       return response.ok;
     } catch (error) {
@@ -185,28 +177,21 @@ export const api = {
   },
 
   async getDockerContainers(): Promise<DockerContainer[] | null> {
-    return adminRequest<DockerContainer[]>(`/api/v1/admin/docker`, {
-      cache: "no-store",
-    });
+    return adminRequest<DockerContainer[]>(`/api/v1/admin/docker`);
   },
 
   async getTables(): Promise<string[] | null> {
-    return adminRequest<string[]>(`/api/v1/admin/database/tables`, {
-      cache: "no-store",
-    });
+    return adminRequest<string[]>(`/api/v1/admin/database/tables`);
   },
 
   async getTableData(tableName: string, limit = 50, offset = 0): Promise<TableData | null> {
     return adminRequest(
       `/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`,
-      { cache: "no-store" },
     );
   },
 
   async getDemoSeedStatus(): Promise<{ enabled: boolean } | null> {
-    return adminRequest<{ enabled: boolean }>(`/api/v1/admin/demo/seed/status`, {
-      cache: "no-store",
-    });
+    return adminRequest<{ enabled: boolean }>(`/api/v1/admin/demo/seed/status`);
   },
 
   async runDemoSeed(options?: {
@@ -217,7 +202,6 @@ export const api = {
       {
         method: "POST",
         body: JSON.stringify(options ?? {}),
-        cache: "no-store",
       },
     );
   },
@@ -228,7 +212,6 @@ export const api = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
-        cache: "no-store",
       });
       const json = await response.json();
       if (!json.success)
@@ -242,7 +225,7 @@ export const api = {
   },
 
   async getCities(): Promise<City[] | null> {
-    return adminRequest<City[]>(`/api/v1/admin/cities`, { cache: "no-store" });
+    return adminRequest<City[]>(`/api/v1/admin/cities`);
   },
 
   async addCity(
@@ -251,7 +234,6 @@ export const api = {
     return adminRequest<City>(`/api/v1/admin/cities`, {
       method: "POST",
       body: JSON.stringify(data),
-      cache: "no-store",
     });
   },
 
@@ -259,7 +241,6 @@ export const api = {
     return adminRequest<City>(`/api/v1/admin/cities/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
-      cache: "no-store",
     });
   },
 
@@ -267,7 +248,6 @@ export const api = {
     try {
       const response = await adminFetch(`/api/v1/admin/cities/${id}`, {
         method: "DELETE",
-        cache: "no-store",
       });
       return response.ok;
     } catch (error) {
@@ -277,23 +257,16 @@ export const api = {
   },
 
   async getCityStats(): Promise<CityStats[] | null> {
-    return adminRequest<CityStats[]>(`/api/v1/admin/cities/stats`, {
-      cache: "no-store",
-    });
+    return adminRequest<CityStats[]>(`/api/v1/admin/cities/stats`);
   },
 
   async getCityAgents(cityId: string): Promise<User[] | null> {
-    return adminRequest<User[]>(`/api/v1/admin/cities/${cityId}/agents`, {
-      cache: "no-store",
-    });
+    return adminRequest<User[]>(`/api/v1/admin/cities/${cityId}/agents`);
   },
 
   async getCityInvitations(cityId: string): Promise<Invitation[] | null> {
     return adminRequest<Invitation[]>(
       `/api/v1/admin/cities/${cityId}/invitations`,
-      {
-        cache: "no-store",
-      },
     );
   },
 
@@ -304,7 +277,6 @@ export const api = {
     return adminRequestOrThrow<User>(`/api/v1/admin/cities/${cityId}/mayor`, {
       method: "POST",
       body: JSON.stringify(data),
-      cache: "no-store",
     });
   },
 
@@ -317,7 +289,6 @@ export const api = {
       {
         method: "POST",
         body: JSON.stringify(data),
-        cache: "no-store",
       },
     );
   },
@@ -328,7 +299,6 @@ export const api = {
         `/api/v1/admin/invitations/${invitationId}/force-accept`,
         {
           method: "POST",
-          cache: "no-store",
         },
       );
       return response.ok;
