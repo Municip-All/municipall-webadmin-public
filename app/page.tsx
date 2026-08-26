@@ -90,11 +90,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchStats().catch(console.error);
+      fetchStats().catch(() => {});
     }, 0);
 
     const interval = setInterval(() => {
-      fetchStats().catch(console.error);
+      fetchStats().catch(() => {});
     }, 30000);
 
     return () => {

@@ -73,7 +73,7 @@ async function adminRequest<T>(
     const response = await adminFetch(path, init);
     return await parseAdminJson<T>(response);
   } catch (error) {
-    console.error(`[API] ${path}:`, error);
+    if (process.env.NODE_ENV === "development") console.error(`[API] ${path}:`, error);
     return null;
   }
 }
@@ -171,7 +171,7 @@ export const api = {
       });
       return response.ok;
     } catch (error) {
-      console.error("[API] deleteUser:", error);
+      if (process.env.NODE_ENV === "development") console.error("[API] deleteUser:", error);
       return false;
     }
   },
@@ -219,7 +219,7 @@ export const api = {
       return json.data;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error("[API DEBUG] Error executing query:", message);
+      if (process.env.NODE_ENV === "development") console.error("[API DEBUG] Error executing query:", message);
       return { error: message };
     }
   },
@@ -251,7 +251,7 @@ export const api = {
       });
       return response.ok;
     } catch (error) {
-      console.error("[API DEBUG] Error deleting city:", error);
+      if (process.env.NODE_ENV === "development") console.error("[API DEBUG] Error deleting city:", error);
       return false;
     }
   },
@@ -303,7 +303,7 @@ export const api = {
       );
       return response.ok;
     } catch (error) {
-      console.error("[API DEBUG] Error force accepting invitation:", error);
+      if (process.env.NODE_ENV === "development") console.error("[API DEBUG] Error force accepting invitation:", error);
       return false;
     }
   },

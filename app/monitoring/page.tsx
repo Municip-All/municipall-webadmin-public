@@ -34,11 +34,11 @@ export default function MonitoringPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchContainers().catch(console.error);
+      fetchContainers().catch(() => {});
     }, 0);
 
     const interval = setInterval(() => {
-      fetchContainers().catch(console.error);
+      fetchContainers().catch(() => {});
     }, 15000);
 
     return () => {

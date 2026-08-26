@@ -146,7 +146,7 @@ export default function CityCreateWizard({
             setSearchResults(data.features.slice(0, 5) as GouvGeoFeature[]);
           }
         } catch (error) {
-          console.error("Error fetching cities from data.gouv:", error);
+          if (process.env.NODE_ENV === "development") console.error("Error fetching cities from data.gouv:", error);
         }
         if (isMounted) setIsSearching(false);
       } else if (isMounted) {

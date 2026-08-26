@@ -64,7 +64,7 @@ export default function UsersPage() {
       }
     };
 
-    void loadData().catch(console.error);
+    void loadData().catch(() => {});
 
     return () => {
       cancelled = true;

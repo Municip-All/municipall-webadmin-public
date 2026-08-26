@@ -106,7 +106,7 @@ async function proxyRequest(
       headers: { "content-type": contentType },
     });
   } catch (error) {
-    console.error("[BFF Proxy] Error proxying request:", error);
+    if (process.env.NODE_ENV === "development") console.error("[BFF Proxy] Error proxying request:", error);
     return NextResponse.json(
       { message: "Failed to reach the backend API." },
       { status: 502 },

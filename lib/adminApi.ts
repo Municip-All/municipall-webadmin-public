@@ -11,7 +11,7 @@ export async function assertPlatformAdminKeyConfigured(): Promise<boolean> {
     if (res.status === 500) {
       const body = await res.json().catch(() => ({}));
       if (typeof body === "object" && body !== null && "message" in body && String(body.message).includes("PLATFORM_ADMIN_KEY")) {
-        console.error("PLATFORM_ADMIN_KEY is not configured on the server.");
+        if (process.env.NODE_ENV === "development") console.error("PLATFORM_ADMIN_KEY is not configured on the server.");
         return false;
       }
     }
