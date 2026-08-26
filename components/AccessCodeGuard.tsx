@@ -45,6 +45,7 @@ export default function AccessCodeGuard({
   });
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -65,19 +66,23 @@ export default function AccessCodeGuard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
+        signal: AbortSignal.timeout(15_000),
       });
       const data = await res.json();
       if (data.valid) {
         localStorage.setItem("admin_authorized", "true");
         setIsAuthorized(true);
         setError(false);
+        setNetworkError(false);
       } else {
         setError(true);
+        setNetworkError(false);
         setTimeout(() => setError(false), 2000);
       }
     } catch {
-      setError(true);
-      setTimeout(() => setError(false), 2000);
+      setNetworkError(true);
+      setError(false);
+      setTimeout(() => setNetworkError(false), 3000);
     }
   };
 
@@ -136,6 +141,13 @@ export default function AccessCodeGuard({
                 <div className="flex items-center justify-center gap-2 text-sm font-medium text-red-600">
                   <AlertCircle className="h-4 w-4" />
                   Code invalide
+                </div>
+              )}
+
+              {networkError && (
+                <div className="flex items-center justify-center gap-2 text-sm font-medium text-amber-600">
+                  <AlertCircle className="h-4 w-4" />
+                  Erreur réseau. Réessayez.
                 </div>
               )}
 

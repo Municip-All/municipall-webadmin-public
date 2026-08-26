@@ -105,11 +105,11 @@ async function proxyRequest(
       status: response.status,
       headers: { "content-type": contentType },
     });
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") console.error("[BFF Proxy] Error proxying request:", error);
+  } catch (error: unknown) {
+    const isTimeout = error instanceof Error && error.name === "TimeoutError";
     return NextResponse.json(
-      { message: "Failed to reach the backend API." },
-      { status: 502 },
+      { message: isTimeout ? "Backend API request timed out." : "Failed to reach the backend API." },
+      { status: isTimeout ? 504 : 502 },
     );
   }
 }
