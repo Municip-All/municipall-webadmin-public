@@ -1,25 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "crypto";
 
 const ALLOWED_ENVS = new Set(["DEV", "PROD"]);
 
-function getExpectedSessionHmac(): string {
-  return createHmac("sha256", process.env.PLATFORM_ADMIN_KEY ?? "").update("admin-session").digest("hex");
+function toHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function getExpectedSessionHmac(): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(process.env.PLATFORM_ADMIN_KEY ?? ""),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode("admin-session"),
+  );
+  return toHex(signature);
 }
 
 function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+  const bytesA = new TextEncoder().encode(a);
+  const bytesB = new TextEncoder().encode(b);
+  if (bytesA.length !== bytesB.length) return false;
+  let diff = 0;
+  for (let i = 0; i < bytesA.length; i++) {
+    diff |= bytesA[i] ^ bytesB[i];
+  }
+  return diff === 0;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/api/admin") && !pathname.startsWith("/api/admin/auth")) {
     const session = request.cookies.get("admin_session");
-    const expected = getExpectedSessionHmac();
+    const expected = await getExpectedSessionHmac();
     if (!session?.value || !safeEqual(session.value, expected)) {
       return NextResponse.json(
         { message: "Unauthorized" },
