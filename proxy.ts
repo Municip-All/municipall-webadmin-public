@@ -35,7 +35,7 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/api/admin") && !pathname.startsWith("/api/admin/auth")) {
