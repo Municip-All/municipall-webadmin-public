@@ -63,7 +63,7 @@ export interface MonitoringStats {
   };
 }
 
-import { adminFetch, parseAdminJson } from "./adminApi";
+import { adminDelete, adminFetch, adminPost, parseAdminJson, type AdminDeleteResult } from "./adminApi";
 
 async function adminRequest<T>(
   path: string,
@@ -164,16 +164,11 @@ export const api = {
     });
   },
 
-  async deleteUser(id: number): Promise<boolean> {
-    try {
-      const response = await adminFetch(`/api/v1/admin/users/${id}`, {
-        method: "DELETE",
-      });
-      return response.ok;
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") console.error("[API] deleteUser:", error);
-      return false;
-    }
+  async deleteUser(id: number): Promise<AdminDeleteResult> {
+    return adminDelete(`/api/v1/admin/users/${id}`, async () => {
+      const users = await adminRequest<User[]>(`/api/v1/admin/users`);
+      return users !== null && !users.some((u) => u.id === id);
+    });
   },
 
   async getDockerContainers(): Promise<DockerContainer[] | null> {
@@ -244,16 +239,11 @@ export const api = {
     });
   },
 
-  async deleteCity(id: string): Promise<boolean> {
-    try {
-      const response = await adminFetch(`/api/v1/admin/cities/${id}`, {
-        method: "DELETE",
-      });
-      return response.ok;
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") console.error("[API DEBUG] Error deleting city:", error);
-      return false;
-    }
+  async deleteCity(id: string): Promise<AdminDeleteResult> {
+    return adminDelete(`/api/v1/admin/cities/${encodeURIComponent(id)}`, async () => {
+      const cities = await adminRequest<City[]>(`/api/v1/admin/cities`);
+      return cities !== null && !cities.some((c) => c.id === id);
+    });
   },
 
   async getCityStats(): Promise<CityStats[] | null> {
@@ -306,5 +296,25 @@ export const api = {
       if (process.env.NODE_ENV === "development") console.error("[API DEBUG] Error force accepting invitation:", error);
       return false;
     }
+  },
+
+  async cancelInvitation(
+    invitationId: number,
+    cityId: string,
+  ): Promise<AdminDeleteResult> {
+    const verifyDeleted = async () => {
+      const invitations = await adminRequest<Invitation[]>(
+        `/api/v1/admin/cities/${cityId}/invitations`,
+      );
+      return (
+        invitations !== null &&
+        !invitations.some((inv) => inv.id === invitationId)
+      );
+    };
+
+    return adminPost(
+      `/api/v1/admin/invitations/${invitationId}/cancel`,
+      verifyDeleted,
+    );
   },
 };

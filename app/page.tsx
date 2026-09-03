@@ -79,8 +79,10 @@ export default function Dashboard() {
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "—";
     const now = new Date();
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diff < 0) return "À l'instant";
 
     if (diff < 60) return "À l'instant";
     if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;

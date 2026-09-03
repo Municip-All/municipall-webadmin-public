@@ -99,32 +99,56 @@ async function proxyRequest(
   let body: string | undefined;
   if (request.method !== "GET" && request.method !== "HEAD") {
     body = await request.text();
-    const originalContentType = request.headers.get("content-type");
-    headers["Content-Type"] = originalContentType || "application/json";
-  } else {
-    headers["Content-Type"] = "application/json";
+    if (body) {
+      const originalContentType = request.headers.get("content-type");
+      headers["Content-Type"] = originalContentType || "application/json";
+    }
   }
 
   try {
     const response = await fetch(targetUrl, {
       method: request.method,
       headers,
-      body,
+      body: body || undefined,
       signal: AbortSignal.timeout(30_000),
     });
+
+    // Normalize empty success responses so the client never chokes on 204.
+    if (response.status === 204 || response.status === 205) {
+      try {
+        await response.arrayBuffer();
+      } catch {
+        // Backend may already have closed the connection after a successful delete.
+      }
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
 
     const contentType = response.headers.get("content-type") || "";
     const isJson = contentType.includes("application/json");
 
     if (isJson) {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
+      const raw = await response.text();
+      if (!raw.trim()) {
+        if (response.ok) {
+          return NextResponse.json({ success: true }, { status: 200 });
+        }
+        return new NextResponse(null, { status: response.status });
+      }
+      try {
+        const data = JSON.parse(raw);
+        return NextResponse.json(data, { status: response.status });
+      } catch {
+        return new NextResponse(raw, {
+          status: response.status,
+          headers: { "content-type": contentType },
+        });
+      }
     }
 
     const text = await response.text();
     return new NextResponse(text, {
       status: response.status,
-      headers: { "content-type": contentType },
+      headers: contentType ? { "content-type": contentType } : undefined,
     });
   } catch (error: unknown) {
     const isTimeout = error instanceof Error && error.name === "TimeoutError";

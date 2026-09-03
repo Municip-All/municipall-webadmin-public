@@ -1,4 +1,6 @@
 export const ENV_STORAGE_KEY = "municipall_env";
+/** Lu par `proxy.ts` pour router les appels `/api/admin/*` vers dev ou prod. */
+export const ENV_COOKIE_KEY = "admin_env";
 
 export type AdminEnvironment = "DEV" | "PROD";
 
@@ -31,8 +33,20 @@ export function getStoredAdminEnvironment(): AdminEnvironment {
   return normalizeAdminEnvironment(localStorage.getItem(ENV_STORAGE_KEY));
 }
 
+function writeAdminEnvironmentCookie(env: AdminEnvironment): void {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${ENV_COOKIE_KEY}=${env}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax${secure}`;
+}
+
+/** Aligne le cookie `admin_env` sur localStorage (lu par le proxy serveur). */
+export function syncAdminEnvironmentCookie(): void {
+  writeAdminEnvironmentCookie(getStoredAdminEnvironment());
+}
+
 export function setStoredAdminEnvironment(env: AdminEnvironment): void {
   localStorage.setItem(ENV_STORAGE_KEY, env);
+  writeAdminEnvironmentCookie(env);
 }
 
 export const DEV_API_FALLBACK = "https://dev.api.municipall.dev";

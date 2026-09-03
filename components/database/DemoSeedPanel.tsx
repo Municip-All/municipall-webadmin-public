@@ -38,12 +38,14 @@ export default function DemoSeedPanel() {
 
   const handleRunSeed = async () => {
     const ok = await confirm({
-      title: resetBeforeSeed ? "Réinitialiser et lancer le seed ?" : "Lancer le seed ?",
-      description: "Données de démo — Le Kremlin-Bicêtre",
+      title: resetBeforeSeed
+        ? "Réinitialiser et régénérer la démo ?"
+        : "Ajouter un jeu de démo ?",
+      description: "Jeu de données démo v2 — Le Kremlin-Bicêtre",
       message: resetBeforeSeed
-        ? "Les données de démo existantes pour la ville le-kremlin-bicetre seront supprimées puis recréées (comptes @demo.municipall.dev, signalements, etc.)."
-        : "Le seed s'exécutera sans supprimer les données demo existantes (--no-reset).",
-      confirmLabel: resetBeforeSeed ? "Réinitialiser et lancer" : "Lancer le seed",
+        ? "Supprime les comptes @demo.municipall.dev et toutes les données liées (signalements, questions, suggestions, événements, travaux), puis recrée un jeu frais : incidents voirie/éclairage, questions mairie, suggestions quartier."
+        : "Ajoute un jeu de démo sans supprimer les données existantes (--no-reset).",
+      confirmLabel: resetBeforeSeed ? "Supprimer et régénérer" : "Ajouter le seed",
       variant: resetBeforeSeed ? "danger" : "default",
     });
     if (!ok) return;
@@ -56,7 +58,7 @@ export default function DemoSeedPanel() {
       const result = await api.runDemoSeed({ reset: resetBeforeSeed });
       setOutput(result.output);
       setDurationMs(result.durationMs);
-      toast("success", `Seed terminé en ${(result.durationMs / 1000).toFixed(1)}s`);
+      toast("success", `Seed démo v2 terminé en ${(result.durationMs / 1000).toFixed(1)}s`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Échec du seed de démo.";
@@ -78,14 +80,20 @@ export default function DemoSeedPanel() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900">
-              Seed de démo (DEV)
+              Seed de démo v2 (DEV)
             </h3>
             <p className="mt-1 max-w-xl text-xs text-slate-600">
-              Peuple la base avec la ville Le Kremlin-Bicêtre, des comptes{" "}
+              Régénère Le Kremlin-Bicêtre avec un jeu mis à jour : signalements
+              (voirie, éclairage, sécurité…), questions &amp; suggestions, événements
+              et travaux. Comptes{" "}
               <code className="rounded bg-white/80 px-1">@demo.municipall.dev</code>{" "}
-              (mot de passe <code className="rounded bg-white/80 px-1">Demo2026!</code>
-              ), signalements, contacts, événements et travaux.
+              / mot de passe{" "}
+              <code className="rounded bg-white/80 px-1">Demo2026!</code>.
             </p>
+            <ul className="mt-2 list-inside list-disc text-[11px] text-slate-500">
+              <li>Cocher « Réinitialiser » pour remplacer l’ancienne démo</li>
+              <li>Puis rouvrir le backoffice mairie pour voir la liste Signalements</li>
+            </ul>
             {enabled === false && (
               <p className="mt-2 text-xs font-medium text-amber-700">
                 Seed désactivé côté API sur cet environnement.
@@ -115,7 +123,7 @@ export default function DemoSeedPanel() {
             ) : (
               <Play className="h-4 w-4" />
             )}
-            {running ? "Seed en cours…" : "Lancer le seed"}
+            {running ? "Seed en cours…" : "Régénérer la démo"}
           </button>
         </div>
       </div>

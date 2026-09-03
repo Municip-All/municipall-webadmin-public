@@ -15,10 +15,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Municip'All Panel",
   description: "Interface d'administration globale Municip'All",
-  icons: {
-    icon: [{ url: "/favicon.png", type: "image/png" }],
-    apple: [{ url: "/favicon.png", type: "image/png" }],
-  },
 };
 
 export default function RootLayout({

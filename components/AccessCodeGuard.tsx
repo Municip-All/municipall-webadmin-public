@@ -54,9 +54,22 @@ export default function AccessCodeGuard({
   }, []);
 
   useEffect(() => {
-    if (isAuthorized) {
-      assertPlatformAdminKeyConfigured();
-    }
+    if (!isAuthorized) return;
+
+    let cancelled = false;
+    void (async () => {
+      // localStorage seul ne suffit pas : le proxy exige le cookie admin_session.
+      const ok = await assertPlatformAdminKeyConfigured();
+      if (cancelled) return;
+      if (!ok) {
+        localStorage.removeItem("admin_authorized");
+        setIsAuthorized(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthorized]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +79,7 @@ export default function AccessCodeGuard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
+        credentials: "same-origin",
         signal: AbortSignal.timeout(15_000),
       });
       const data = await res.json();

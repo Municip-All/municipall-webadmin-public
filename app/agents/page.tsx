@@ -17,8 +17,12 @@ import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import RequirePermission from "@/components/RequirePermission";
 import { PanelPermission } from "@/lib/panelPermissions";
+import { useToast } from "@/context/ToastContext";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 
 export default function AgentsPage() {
+  const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [cities, setCities] = useState<City[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +104,32 @@ export default function AgentsPage() {
     if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}m`;
     if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
     return date.toLocaleDateString();
+  };
+
+  const handleCancelInvitation = async (inv: Invitation) => {
+    const ok = await confirm({
+      title: "Annuler cette invitation ?",
+      message: (
+        <>
+          L&apos;invitation envoyée à{" "}
+          <span className="font-semibold text-slate-900">{inv.email}</span>{" "}
+          pour {getCityName(inv.cityId)} sera supprimée.
+        </>
+      ),
+      description: "L'agent ne pourra plus utiliser le lien d'invitation.",
+      confirmLabel: "Annuler l'invitation",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    const result = await api.cancelInvitation(inv.id, inv.cityId);
+    if (!result.ok) {
+      toast("error", result.message || "Impossible d'annuler l'invitation.");
+      return;
+    }
+
+    setInvitations((prev) => prev.filter((i) => i.id !== inv.id));
+    toast("success", "Invitation annulée.");
   };
 
   return (
@@ -322,9 +352,9 @@ export default function AgentsPage() {
                   <Loader2 className="w-6 h-6 text-gray-300 animate-spin" />
                 </div>
               ) : invitations.length > 0 ? (
-                invitations.map((inv, i) => (
+                invitations.map((inv) => (
                   <div
-                    key={i}
+                    key={inv.id}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
                   >
                     <div>
@@ -335,7 +365,12 @@ export default function AgentsPage() {
                         {getCityName(inv.cityId)} • {formatTime(inv.createdAt)}
                       </p>
                     </div>
-                    <button className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => handleCancelInvitation(inv)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      aria-label={`Annuler l'invitation de ${inv.email}`}
+                    >
                       <X className="w-4 h-4" />
                     </button>
                   </div>

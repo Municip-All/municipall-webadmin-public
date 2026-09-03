@@ -144,9 +144,9 @@ export default function UsersPage() {
 
     if (!ok) return;
 
-    const success = await api.deleteUser(user.id);
-    if (!success) {
-      toast("error", "Impossible de supprimer l'utilisateur.");
+    const result = await api.deleteUser(user.id);
+    if (!result.ok) {
+      toast("error", result.message || "Impossible de supprimer l'utilisateur.");
       return;
     }
 

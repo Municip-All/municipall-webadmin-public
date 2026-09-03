@@ -11,7 +11,7 @@ function toHex(buffer: ArrayBuffer): string {
 async function getExpectedSessionHmac(): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(process.env.PLATFORM_ADMIN_KEY ?? ""),
+    new TextEncoder().encode((process.env.PLATFORM_ADMIN_KEY ?? "").trim()),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -48,11 +48,19 @@ export async function proxy(request: NextRequest) {
       );
     }
 
+    const headerEnv = request.headers.get("x-admin-env");
     const envCookie = request.cookies.get("admin_env")?.value;
-    const envValue = envCookie && ALLOWED_ENVS.has(envCookie) ? envCookie : "DEV";
+    const envValue =
+      envCookie && ALLOWED_ENVS.has(envCookie)
+        ? envCookie
+        : headerEnv && ALLOWED_ENVS.has(headerEnv)
+          ? headerEnv
+          : "DEV";
 
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-admin-env", envValue);
+    if (envValue !== headerEnv) {
+      requestHeaders.set("x-admin-env", envValue);
+    }
     return NextResponse.next({
       request: { headers: requestHeaders },
     });

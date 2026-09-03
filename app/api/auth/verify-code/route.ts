@@ -33,7 +33,7 @@ function cleanupRateLimitMap(): void {
 }
 
 function getSessionHmac(): string {
-  return createHmac("sha256", process.env.PLATFORM_ADMIN_KEY ?? "").update("admin-session").digest("hex");
+  return createHmac("sha256", ADMIN_KEY).update("admin-session").digest("hex");
 }
 
 export async function POST(request: NextRequest) {
@@ -79,10 +79,12 @@ export async function POST(request: NextRequest) {
 
   if (valid) {
     const hmac = getSessionHmac();
+    // Secure cookies are dropped on http://localhost — break API proxy auth.
+    const secure = request.nextUrl.protocol === "https:";
     response.cookies.set("admin_session", hmac, {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure,
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24,
     });

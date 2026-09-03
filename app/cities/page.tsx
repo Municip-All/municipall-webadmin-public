@@ -12,6 +12,7 @@ import {
   Mail,
   UserCheck,
   FileText,
+  X,
 } from "lucide-react";
 import { api, City, CityStats, User, Invitation } from "@/lib/api";
 import {
@@ -103,12 +104,13 @@ export default function CitiesPage() {
       variant: "danger",
     });
     if (!ok) return;
-    const success = await api.deleteCity(id);
-    if (success) {
+    const result = await api.deleteCity(id);
+    if (result.ok) {
       setCities(cities.filter((c) => c.id !== id));
       setRefreshKey((prev) => prev + 1);
+      toast("success", "Ville supprimée.");
     } else {
-      toast("error", "Impossible de supprimer la ville.");
+      toast("error", result.message || "Impossible de supprimer la ville.");
     }
   };
 
@@ -161,6 +163,8 @@ export default function CitiesPage() {
 
   const handleOpenAgents = async (city: City) => {
     setSelectedCity(city);
+    setMayorForm({ name: "", surname: "", email: "", password: "" });
+    setInviteEmail("");
     setIsAgentsModalOpen(true);
     const agents = await api.getCityAgents(city.id);
     const invitations = await api.getCityInvitations(city.id);
@@ -231,6 +235,34 @@ export default function CitiesPage() {
     } else {
       toast("error", "Impossible d'accepter l'invitation.");
     }
+  };
+
+  const handleCancelInvitation = async (inv: Invitation) => {
+    if (!selectedCity) return;
+
+    const ok = await confirm({
+      title: "Annuler cette invitation ?",
+      message: (
+        <>
+          L&apos;invitation envoyée à{" "}
+          <span className="font-semibold text-slate-900">{inv.email}</span>{" "}
+          sera supprimée.
+        </>
+      ),
+      description: "L'agent ne pourra plus utiliser le lien d'invitation.",
+      confirmLabel: "Annuler l'invitation",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    const result = await api.cancelInvitation(inv.id, selectedCity.id);
+    if (!result.ok) {
+      toast("error", result.message || "Impossible d'annuler l'invitation.");
+      return;
+    }
+
+    setCityInvitations((prev) => prev.filter((i) => i.id !== inv.id));
+    toast("success", "Invitation annulée.");
   };
 
   return (
@@ -459,14 +491,32 @@ export default function CitiesPage() {
 
       {/* Agents Modal (Real Agents & Invitations) */}
       {isAgentsModalOpen && selectedCity && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeAgentsModal}>
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="presentation"
+        >
+          <button
+            type="button"
+            aria-label="Fermer"
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            onClick={closeAgentsModal}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agents-modal-title"
+            className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl max-h-[90vh]"
+          >
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h3 className="text-xl font-extrabold text-gray-900">
+              <h3
+                id="agents-modal-title"
+                className="text-xl font-extrabold text-gray-900"
+              >
                 Agents: {selectedCity.name}
               </h3>
               <button
-                onClick={() => setIsAgentsModalOpen(false)}
+                type="button"
+                onClick={closeAgentsModal}
                 className="text-gray-400 hover:text-gray-600 font-bold p-2"
                 aria-label="Fermer"
               >
@@ -540,6 +590,7 @@ export default function CitiesPage() {
                     className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-municipall-blue"
                   />
                   <button
+                    type="button"
                     onClick={handleAddInvitation}
                     className="px-4 py-2 bg-municipall-blue text-white rounded-xl font-bold text-sm"
                   >
@@ -602,6 +653,7 @@ export default function CitiesPage() {
                       </p>
                       <div className="flex items-center gap-3">
                         <button
+                          type="button"
                           onClick={() => handleForceAccept(inv.id)}
                           className="px-2 py-1 bg-municipall-blue/10 text-municipall-blue text-[10px] font-black uppercase rounded hover:bg-municipall-blue hover:text-white transition-colors"
                         >
@@ -613,6 +665,16 @@ export default function CitiesPage() {
                         <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-black uppercase rounded">
                           Pending
                         </span>
+                        {canManageAgents ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelInvitation(inv)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            aria-label={`Annuler l'invitation de ${inv.email}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   ))}
